@@ -1,9 +1,14 @@
 #include "platform.h"
 
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+
+#include "gfx.h"
 
 const char *const WINDOW_TITLE = "Wired";
-const unsigned int const SCREEN_WIDTH = 800;
-const unsigned int const SCREEN_HEIGHT = 600;
+const unsigned int SCREEN_WIDTH = SCREEN_W * 2; // scale up the internal resolution for the window;
+const unsigned int SCREEN_HEIGHT = SCREEN_H * 2; // scale up the internal resolution for the window;
 
 
 // Platform functions
@@ -96,18 +101,6 @@ void platform_update(struct platform *platform) {
 }
 
 
-// clear the screen with a color
-void platform_clear(struct platform *platform, float r, float g, float b, float a) {
-  if (!platform) {
-    LOG("platform_clear: Platform pointer is NULL");
-    return;
-  }
-
-  glClearColor(r, g, b, a);
-  glClear(GL_COLOR_BUFFER_BIT);
-}
-
-
 void platform_swap_buffers(struct platform *platform) {
   if (!platform) {
     LOG("platform_swap_buffers: Platform pointer is NULL");
@@ -128,4 +121,31 @@ void platform_shutdown(struct platform *platform) {
   SDL_GL_DestroyContext(platform->gl);
   SDL_DestroyWindow(platform->window);
   SDL_Quit();
+}
+
+
+// resolve path to executable and append "assets/" to it, then append the asset_name
+unsigned get_asset_path(char *buffer, size_t buffer_size, const char *asset_name) {
+  char exe[512];
+  char try_path[512];
+
+  ssize_t len = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
+  if (len > 0) {
+    exe[len] = '\0';
+    char *last = strrchr(exe, '/');
+
+    if (last) {
+      *last = '\0'; // trim to directory
+      snprintf(try_path, sizeof(try_path), "%s/assets/%s", exe, asset_name);
+
+      if (access(try_path, R_OK) == 0) {
+        strncpy(buffer, try_path, buffer_size);
+        buffer[buffer_size-1] = '\0';
+
+        return 1;
+      }
+    }
+  }
+
+  return 0;
 }

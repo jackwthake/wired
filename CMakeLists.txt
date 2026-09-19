@@ -43,3 +43,16 @@ target_link_libraries(${PROJECT_NAME}
     ${GLES_LIBRARIES}
 )
 
+# --- Copy assets to build directory ---
+file(GLOB_RECURSE ASSET_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/*")
+
+add_custom_target(copy_assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        "${CMAKE_CURRENT_BINARY_DIR}/assets"
+    COMMENT "Copying assets to build directory"
+    SOURCES ${ASSET_FILES}
+)
+
+add_dependencies(${PROJECT_NAME} copy_assets)

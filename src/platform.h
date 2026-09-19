@@ -32,10 +32,11 @@ struct platform {
 unsigned platform_init(struct platform *platform);
 
 void platform_update(struct platform *platform);
-
-void platform_clear(struct platform *platform, float r, float g, float b, float a);
 void platform_swap_buffers(struct platform *platform);
 
 void platform_shutdown(struct platform *platform);
+
+
+unsigned get_asset_path(char *buffer, size_t buffer_size, const char *asset_name);
 
 #endif // __PLATFORM_H__
