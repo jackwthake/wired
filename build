@@ -31,10 +31,11 @@ fi
 
 pushd "$BUILD_DIR"
 make -j$(nproc)
+make_status=$?
 
-if is_arg_present "--run" "$@" && [ $? -eq 0 ]; then
+if is_arg_present "--run" "$@" && [ "$make_status" -eq 0 ]; then
     echo "Running the application..."
-    ./"$PROG_NAME"
+    ./$PROG_NAME
 fi
 
 popd
