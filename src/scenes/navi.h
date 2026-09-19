@@ -31,4 +31,7 @@ struct window *navi_add_window(struct navi_t *navi, unsigned x, unsigned y, unsi
 
 void navi_update_windows(struct navi_t *navi);
 
+
+void draw_string_to_framebuffer(uint32_t *framebuffer, const char *str, int x_offset, int y_offset, int *next_char_x, int *next_char_y, uint32_t color);
+
 #endif // __NAVI_H__

@@ -21,7 +21,7 @@ pkg_check_modules(EGL     REQUIRED egl)
 pkg_check_modules(GLES    REQUIRED glesv2)
 
 # --- Main executable ---
-file(GLOB SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
 
 add_executable(${PROJECT_NAME}
     ${SOURCES}

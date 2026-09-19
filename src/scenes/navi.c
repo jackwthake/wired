@@ -51,7 +51,7 @@ static void draw_glyph_to_framebuffer(uint32_t *framebuffer, const char c, int x
 }
 
 
-static void draw_string_to_framebuffer(uint32_t *framebuffer, const char *str, int x_offset, int y_offset, int *next_char_x, int *next_char_y, uint32_t color) {
+void draw_string_to_framebuffer(uint32_t *framebuffer, const char *str, int x_offset, int y_offset, int *next_char_x, int *next_char_y, uint32_t color) {
   int original_x_offset = x_offset; // Store the original x_offset for line breaks
   unsigned str_len = strlen(str);
 

@@ -1,34 +1,14 @@
 #include "platform.h"
 
 #include "gfx.h"
-#include "navi.h"
+#include "fsm.h"
+
+#include "scenes/scenes.h"
 
 extern const unsigned int PLATFORM_SCREEN_WIDTH;
 extern const unsigned int PLATFORM_SCREEN_HEIGHT;
 
-
-void draw_test_pattern(struct window *w) {
-  static const uint32_t top[7] = {           // 75% bars: gray, yellow, cyan, green, magenta, red, blue
-    RGB(191,191,191), RGB(191,191,0), RGB(0,191,191), RGB(0,191,0),
-    RGB(191,0,191),   RGB(191,0,0),   RGB(0,0,191)
-  };
-  static const uint32_t mid[7] = {           // thin reverse-blue strip
-    RGB(0,0,191), RGB(0,0,0), RGB(191,0,191), RGB(0,0,0),
-    RGB(0,191,191), RGB(0,0,0), RGB(191,191,191)
-  };
-  static const uint32_t bot[7] = {           // -I, white, +Q, black, then near-black steps
-    RGB(0,33,76), RGB(255,255,255), RGB(50,0,106), RGB(0,0,0),
-    RGB(0,0,0),   RGB(12,12,12),    RGB(0,0,0)
-  };
-
-  for (int y = 0; y < 240; y++) {
-    const uint32_t *row = (y * 12 < 240 * 8) ? top      // top 2/3
-                        : (y * 12 < 240 * 9) ? mid      // next 1/12
-                        : bot;                          // bottom 1/4
-    for (int x = 0; x < 320; x++)
-      w->framebuff[y * w->w + x] = row[x * 7 / w->w];
-  }
-}
+state_machine_t main_state;
 
 
 int main(int argc, char* argv[]) {
@@ -44,15 +24,21 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  struct navi_t navi;
-  navi_init(&navi, 10);
+  fsm_init(&main_state, BOOT_STATE, NUM_STATES);
+  fsm_set_state_interface(&main_state, BOOT_STATE, &boot_scene);
+  fsm_set_state_interface(&main_state, DESKTOP_STATE, &desktop_scene);
 
-  navi_add_window(&navi, (SCREEN_W / 2) - 160, (SCREEN_H / 2) - 120, 320, 240, "test pattern", NULL, 0, draw_test_pattern);
+  if (!fsm_start(&main_state)) {
+    LOG("main: fsm init failed");
+    platform_shutdown(&platform);
+    return 1;
+  }
 
   while (platform.running) {
     platform_update(&platform);
+    fsm_tick_state(&main_state, platform.platform_time_delta);
 
-    navi_update_windows(&navi);
+    fsm_render_state(&main_state);
 
     gfx_upload();    
     gfx_present(PLATFORM_SCREEN_WIDTH, PLATFORM_SCREEN_HEIGHT, platform.platform_time);
@@ -63,6 +49,7 @@ int main(int argc, char* argv[]) {
     SDL_Delay(16); // ~60 FPS
   }
 
+  fsm_free(&main_state);
   platform_shutdown(&platform);
   return 0;
 }
