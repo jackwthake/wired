@@ -7,8 +7,8 @@
 #include "gfx.h"
 
 const char *const WINDOW_TITLE = "Wired";
-const unsigned int SCREEN_WIDTH = SCREEN_W * 2; // scale up the internal resolution for the window;
-const unsigned int SCREEN_HEIGHT = SCREEN_H * 2; // scale up the internal resolution for the window;
+const unsigned int PLATFORM_SCREEN_WIDTH = SCREEN_W * 2; // scale up the internal resolution for the window;
+const unsigned int PLATFORM_SCREEN_HEIGHT = SCREEN_H * 2; // scale up the internal resolution for the window;
 
 
 // Platform functions
@@ -30,7 +30,7 @@ unsigned platform_init(struct platform *platform) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
   
-  platform->window = SDL_CreateWindow(WINDOW_TITLE, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
+  platform->window = SDL_CreateWindow(WINDOW_TITLE, PLATFORM_SCREEN_WIDTH, PLATFORM_SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
   if (!platform->window) {
     LOG("platform_init: Window creation failed: %s", SDL_GetError());
     return 0;

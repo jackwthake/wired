@@ -1,11 +1,13 @@
 #include "platform.h"
 
 #include "gfx.h"
+#include "navi.h"
 
-extern const unsigned int SCREEN_WIDTH;
-extern const unsigned int SCREEN_HEIGHT;
+extern const unsigned int PLATFORM_SCREEN_WIDTH;
+extern const unsigned int PLATFORM_SCREEN_HEIGHT;
 
-static void draw_test_pattern(uint32_t *px) {
+
+void draw_test_pattern(struct window *w) {
   static const uint32_t top[7] = {           // 75% bars: gray, yellow, cyan, green, magenta, red, blue
     RGB(191,191,191), RGB(191,191,0), RGB(0,191,191), RGB(0,191,0),
     RGB(191,0,191),   RGB(191,0,0),   RGB(0,0,191)
@@ -19,14 +21,15 @@ static void draw_test_pattern(uint32_t *px) {
     RGB(0,0,0),   RGB(12,12,12),    RGB(0,0,0)
   };
 
-  for (int y = 0; y < SCREEN_H; y++) {
-    const uint32_t *row = (y * 12 < SCREEN_H * 8) ? top      // top 2/3
-                        : (y * 12 < SCREEN_H * 9) ? mid      // next 1/12
-                        : bot;                               // bottom 1/4
-    for (int x = 0; x < SCREEN_W; x++)
-      px[y * SCREEN_W + x] = row[x * 7 / SCREEN_W];
+  for (int y = 0; y < 240; y++) {
+    const uint32_t *row = (y * 12 < 240 * 8) ? top      // top 2/3
+                        : (y * 12 < 240 * 9) ? mid      // next 1/12
+                        : bot;                          // bottom 1/4
+    for (int x = 0; x < 320; x++)
+      w->framebuff[y * w->w + x] = row[x * 7 / w->w];
   }
 }
+
 
 int main(int argc, char* argv[]) {
   struct platform platform;
@@ -41,14 +44,18 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
+  struct navi_t navi;
+  navi_init(&navi, 10);
+
+  navi_add_window(&navi, (SCREEN_W / 2) - 160, (SCREEN_H / 2) - 120, 320, 240, "test pattern", NULL, 0, draw_test_pattern);
+
   while (platform.running) {
     platform_update(&platform);
 
-    uint32_t *pixels = gfx_pixels();
-    draw_test_pattern(pixels);
+    navi_update_windows(&navi);
 
     gfx_upload();    
-    gfx_present(SCREEN_WIDTH, SCREEN_HEIGHT, platform.platform_time);
+    gfx_present(PLATFORM_SCREEN_WIDTH, PLATFORM_SCREEN_HEIGHT, platform.platform_time);
     
     platform_swap_buffers(&platform);
 
