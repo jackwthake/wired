@@ -3,12 +3,38 @@
 # This script is used to build the project.
 
 BUILD_DIR="target"
+PROG_NAME="wired"
+BUILD_TYPE="Debug"
+
+is_arg_present() {
+  local target="$1"
+  shift
+
+  for arg in "$@"; do
+    if [ "$arg" = "$target" ]; then
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+if is_arg_present "--clean" "$@"; then
+    echo "Cleaning build directory..."
+    rm -rf "$BUILD_DIR"
+fi
 
 if [ ! -d "$BUILD_DIR" ]; then
     mkdir "$BUILD_DIR"
-    cmake -S . -B "$BUILD_DIR"
+    cmake -S . -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 fi
 
 pushd "$BUILD_DIR"
 make -j$(nproc)
+
+if is_arg_present "--run" "$@" && [ $? -eq 0 ]; then
+    echo "Running the application..."
+    ./"$PROG_NAME"
+fi
+
 popd
