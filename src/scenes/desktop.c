@@ -10,9 +10,11 @@
 #include "navi.h"
 
 extern state_machine_t main_state;
+extern struct platform platform;
 
 static struct navi_t navi;
 static uint32_t *bg;
+
 
 void draw_test_pattern(struct window *w) {
   static const uint32_t top[7] = {           // 75% bars: gray, yellow, cyan, green, magenta, red, blue
@@ -28,11 +30,11 @@ void draw_test_pattern(struct window *w) {
     RGB(0,0,0),   RGB(12,12,12),    RGB(0,0,0)
   };
 
-  for (int y = 0; y < 240; y++) {
-    const uint32_t *row = (y * 12 < 240 * 8) ? top      // top 2/3
-                        : (y * 12 < 240 * 9) ? mid      // next 1/12
+  for (int y = 0; y < w->h; y++) {
+    const uint32_t *row = (y * 12 < w->h * 8) ? top      // top 2/3
+                        : (y * 12 < w->h * 9) ? mid      // next 1/12
                         : bot;                          // bottom 1/4
-    for (int x = 0; x < 320; x++)
+    for (int x = 0; x < w->w; x++)
       w->framebuff[y * w->w + x] = row[x * 7 / w->w];
   }
 }
@@ -45,7 +47,8 @@ void desktop_enter(void *n, size_t s) {
   int width, height;
   bg = convert_bmp_to_framebuffer("bg.bmp", &width, &height);
 
-  navi_add_window(&navi, (SCREEN_W / 2) - 160, (SCREEN_H / 2) - 120, 320, 240, "test pattern", NULL, 0, draw_test_pattern);
+  navi_add_window(&navi, 50, 50, 320, 240, "test pattern", NULL, 0, draw_test_pattern);
+  navi_add_window(&navi, 400, 400, 150, 150, "test pattern 2", NULL, 0, draw_test_pattern);
 }
 
 
@@ -60,14 +63,15 @@ int desktop_render(void *n, size_t s) {
   // clear screen
   draw_bitmap_to_framebuffer(gfx_pixels(), SCREEN_W, SCREEN_H, bg, SCREEN_W, SCREEN_H, 0, 0);
 
-  
+  navi_update_windows(navi, &platform.input);
+  navi_draw_cursor(navi, &platform.input);
 
-  navi_update_windows(navi);
   return 1;
 }
 
 
 void desktop_exit(void *n, size_t s) {
+  navi_free((struct navi_t *)n);
   free(bg);
 }
 

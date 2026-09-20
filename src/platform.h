@@ -4,6 +4,8 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengles2.h>
 
+#include "scenes/input.h"
+
 
 #ifndef LOG
 #ifdef DEBUG
@@ -26,6 +28,10 @@ struct platform {
   unsigned frames;
   double fps_time_accum;
   unsigned fps;
+
+  struct input input;
+  float mouse_wx, mouse_wy;   // last mouse position in window coordinates
+  int win_w, win_h;           // current window size in pixels (pass to gfx_present)
 };
 
 

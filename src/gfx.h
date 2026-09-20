@@ -27,4 +27,6 @@ void gfx_begin_screen(void);
 void gfx_draw_startup(float t);
 void gfx_present(int win_w, int win_h, float t);
 
+int gfx_window_to_screen(int wx, int wy, int win_w, int win_h, int *sx, int *sy);
+
 #endif // __GFX_H__

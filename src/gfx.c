@@ -251,3 +251,31 @@ void gfx_present(int win_w, int win_h, float t) {
 
   draw_quad();
 }
+
+
+// Inverse of the CRT pass for the CPU path (flip on, so y is top-down).
+// Keep CRT_CURVE equal to the 0.1 in crt.fs: tc *= 1.0 + dist * 0.1
+#define CRT_CURVE 0.1f
+ 
+int gfx_window_to_screen(int wx, int wy, int win_w, int win_h, int *sx, int *sy) {
+  float fx = (float)win_w / SCREEN_W;
+  float fy = (float)win_h / SCREEN_H;
+  float s  = fx < fy ? fx : fy;
+  int vw = (int)(SCREEN_W * s);          // same truncation as gfx_present
+  int vh = (int)(SCREEN_H * s);
+  int x0 = (win_w - vw) / 2;
+  int y0 = (win_h - vh) / 2;
+ 
+  float px = (float)(wx - x0) / vw - 0.5f;   // -0.5..0.5 across the visible quad
+  float py = (float)(wy - y0) / vh - 0.5f;
+ 
+  float k  = 1.0f + (px * px + py * py) * CRT_CURVE;
+  float tx = px * k + 0.5f;
+  float ty = py * k + 0.5f;
+ 
+  if (tx < 0.0f || tx >= 1.0f || ty < 0.0f || ty >= 1.0f) return 0;
+ 
+  *sx = (int)(tx * SCREEN_W);
+  *sy = (int)(ty * SCREEN_H);
+  return 1;
+}

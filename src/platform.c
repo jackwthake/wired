@@ -56,6 +56,10 @@ unsigned platform_init(struct platform *platform) {
   LOG("platform_init: Video driver: %s", SDL_GetCurrentVideoDriver());
   LOG("platform_init: GL_VERSION: %s", (const char*)glGetString(GL_VERSION));
   
+  memset(&platform->input, 0, sizeof platform->input);
+  platform->mouse_wx = platform->mouse_wy = 0.0f;
+  SDL_StartTextInput(platform->window);   // SDL3: typed text is opt-in
+
   return 1;
 }
 
@@ -66,32 +70,94 @@ void platform_update(struct platform *platform) {
     LOG("platform_update: Platform pointer is NULL");
     return;
   }
-
+ 
+  struct input *in = &platform->input;
+  in->mouse_pressed = 0;
+  in->mouse_released = 0;
+  in->text[0] = '\0';
+  in->key_count = 0;
+ 
   SDL_Event e;
   while (SDL_PollEvent(&e)) {
     switch (e.type) {
       case SDL_EVENT_QUIT:
         platform->running = false;
         break;
-
-      case SDL_EVENT_KEY_DOWN:
+ 
+      case SDL_EVENT_KEY_DOWN: {
         if (e.key.key == SDLK_ESCAPE) {
           platform->running = false;
+          break;
+        }
+ 
+        int k = NK_NONE;
+        switch (e.key.key) {
+          case SDLK_RETURN:    k = NK_ENTER;     break;
+          case SDLK_BACKSPACE: k = NK_BACKSPACE; break;
+          case SDLK_TAB:       k = NK_TAB;       break;
+          case SDLK_UP:        k = NK_UP;        break;
+          case SDLK_DOWN:      k = NK_DOWN;      break;
+          case SDLK_LEFT:      k = NK_LEFT;      break;
+          case SDLK_RIGHT:     k = NK_RIGHT;     break;
+          case SDLK_HOME:      k = NK_HOME;      break;
+          case SDLK_END:       k = NK_END;       break;
+          case SDLK_DELETE:    k = NK_DELETE;    break;
+          default: break;
+        }
+        if (k != NK_NONE && in->key_count < INPUT_KEYS_MAX) {
+          in->keys[in->key_count++] = k;   // key repeat arrives as extra KEY_DOWN events
+        }
+        break;
+      }
+ 
+      case SDL_EVENT_TEXT_INPUT:
+        SDL_strlcat(in->text, e.text.text, sizeof in->text);
+        break;
+ 
+      case SDL_EVENT_MOUSE_MOTION:
+        platform->mouse_wx = e.motion.x;
+        platform->mouse_wy = e.motion.y;
+        break;
+ 
+      case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        if (e.button.button == SDL_BUTTON_LEFT) {
+          platform->mouse_wx = e.button.x;
+          platform->mouse_wy = e.button.y;
+          in->mouse_down = 1;
+          in->mouse_pressed = 1;
+        }
+        break;
+ 
+      case SDL_EVENT_MOUSE_BUTTON_UP:
+        if (e.button.button == SDL_BUTTON_LEFT) {
+          in->mouse_down = 0;
+          in->mouse_released = 1;
         }
         break;
     }
   }
-
+ 
+  // window pixel -> machine-screen pixel, undoing the CRT curvature
+  SDL_GetWindowSizeInPixels(platform->window, &platform->win_w, &platform->win_h);
+  float density = SDL_GetWindowPixelDensity(platform->window);
+  in->mouse_valid = gfx_window_to_screen((int)(platform->mouse_wx * density),
+                                         (int)(platform->mouse_wy * density),
+                                         platform->win_w, platform->win_h,
+                                         &in->mouse_x, &in->mouse_y);
+ 
+  if (in->mouse_valid) SDL_HideCursor(); else SDL_ShowCursor();
+  
+  // ---- time / fps (unchanged from your version) ----
   Uint64 now_ns = SDL_GetTicksNS();
   double now = now_ns / 1e9;
-
+ 
   platform->platform_time_delta = now - platform->platform_time;
   platform->platform_time = now;
-
+ 
   if (platform->platform_time_delta > 0.1) {
     LOG("platform_update: Warning: Time delta is too large, possible frame drop or pause.");
   }
-
+ 
   platform->fps_time_accum += platform->platform_time_delta;
   if (platform->fps_time_accum >= 1.0) {
     platform->fps = platform->frames;
@@ -163,7 +229,7 @@ uint32_t *convert_bmp_to_framebuffer(const char *asset_name, int *width, int *he
     LOG("Error: Could not open BMP file %s\n", fp);
     return NULL;
   }
-  
+
   // Read 54-byte header (BITMAPFILEHEADER + BITMAPINFOHEADER minimum)
   unsigned char header[54];
   if (fread(header, 1, sizeof(header), file) != sizeof(header)) {

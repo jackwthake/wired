@@ -9,11 +9,10 @@ extern const unsigned int PLATFORM_SCREEN_WIDTH;
 extern const unsigned int PLATFORM_SCREEN_HEIGHT;
 
 state_machine_t main_state;
+struct platform platform;
 
 
 int main(int argc, char* argv[]) {
-  struct platform platform;
-
   if (!platform_init(&platform)) {
     return 1;
   }

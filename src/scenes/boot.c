@@ -11,28 +11,32 @@
 extern state_machine_t main_state;
 
 static const char *boot_sequence[] = {
-  "NEURALINK BIOS v4.71.2 (c) 2079 Kessler-Vance Systems",
-  "CPU: 8x QUANTA-9 @ 4.2THz ............................ OK",
-  "MEM: 65536 PB HOLOGRAPHIC CORE ....................... OK",
-  "Probing bus 0x7F... 14 devices found",
-  "Loading kernel: KVOS_GHOST.sys",
-  "Mounting /dev/synapse0 as root",
+  "NAVI/OS 0.9.3",
+  "CPU: 8x QUANTA-9 @ 4.2THz ..................... OK",
+  "MEM: 65536 PB HOLOGRAPHIC CORE ................ OK",
+  "probing bus ......... 3 devices",
+  "  hd0    ok",
+  "  nic0   no carrier",
+  "  ???0   responding (no driver)",
+  "mounting /              ok (unclean shutdown)",
+  "mounting /home          ok"
+  "mounting /dev/synapse0  ok",
+  "fsck: session table: 1 entry has no end",
   "WARNING: unsigned firmware detected on /dev/optic2",
-  "Bypassing corporate DRM handshake ............ DONE",
-  "Initializing ICE shield, layer 1 of 7",
-  "Neural handshake: awaiting operator...",
-  "Handshake accepted. Latency 3ms",
+  "bypassing corporate DRM handshake ............ DONE",
+  "loading /etc/navi/continuity.conf",
+  "clock: skew +212d (source: unknown)",
   "Starting netd on 0.0.0.0:31337",
   "Spoofing MAC address ......................... OK",
-  "Routing through 6 anonymous relays",
-  "Loading daemon: shadowwatch (PID 1138)",
-  "ALERT: tracer ping from sector 9, ignoring",
-  "Decrypting user profile .................... OK",
-  "No matter where you are, we are all connected."
+  "deletion job 0031: resuming (age 2209d)",
+  "decrypting user profile ...................... OK",
+  "resident: attached",
+  "all systems nominal."
+  ""
 };
 
-static unsigned lines_revealed = 1;
-static unsigned max_lines = 18;
+static unsigned lines_revealed = 0;
+static unsigned max_lines = 22;
 
 void boot_enter(void *n, size_t s) {
   srand(time(NULL));
