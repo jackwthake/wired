@@ -29,6 +29,23 @@ static void draw_rect(uint32_t *pixels, unsigned x, unsigned y, unsigned w, unsi
 }
 
 
+void draw_bitmap_to_framebuffer(uint32_t *framebuffer, int fb_w, int fb_h, uint32_t *bitmap, int bmp_w, int bmp_h, int x_offset, int y_offset) {
+  for (int y = 0; y < bmp_h; y++) {
+    for (int x = 0; x < bmp_w; x++) {
+      uint32_t color = bitmap[y * bmp_w + x];
+      if (color != RGB(255, 0, 255)) { // Skip transparent pixels
+        int fb_x = x + x_offset;
+        int fb_y = y + y_offset;
+        if (fb_x >= 0 && fb_x < fb_w && fb_y >= 0 && fb_y < fb_h) {
+          framebuffer[fb_y * fb_w + fb_x] = color;
+        }
+      }
+    }
+  }
+}
+
+
+
 // draw from 8x16 font bitmap to framebuffer at specified position
 #define GLYPH_WIDTH 8
 #define GLYPH_HEIGHT 16

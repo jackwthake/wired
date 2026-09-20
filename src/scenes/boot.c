@@ -40,7 +40,7 @@ void boot_enter(void *n, size_t s) {
 
 
 void boot_tick(void *n, size_t s, float dt) {
-  if (rand() % 100 <= 5) ++lines_revealed;
+  if (rand() % 100 <=2) ++lines_revealed;
 
   if (lines_revealed > max_lines) {
     fsm_change_state(&main_state, DESKTOP_STATE);

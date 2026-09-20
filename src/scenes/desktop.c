@@ -1,14 +1,18 @@
 #include "scenes.h"
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "../gfx.h"
+#include "../platform.h"
 #include "fsm.h"
 
 #include "navi.h"
 
 extern state_machine_t main_state;
-struct navi_t navi;
+
+static struct navi_t navi;
+static uint32_t *bg;
 
 void draw_test_pattern(struct window *w) {
   static const uint32_t top[7] = {           // 75% bars: gray, yellow, cyan, green, magenta, red, blue
@@ -38,6 +42,9 @@ void desktop_enter(void *n, size_t s) {
   navi_init(&navi, 10);
   fsm_update_internal_state(&main_state, &navi, sizeof(struct navi_t));
 
+  int width, height;
+  bg = convert_bmp_to_framebuffer("bg.bmp", &width, &height);
+
   navi_add_window(&navi, (SCREEN_W / 2) - 160, (SCREEN_H / 2) - 120, 320, 240, "test pattern", NULL, 0, draw_test_pattern);
 }
 
@@ -50,10 +57,18 @@ void desktop_tick(void *n, size_t s, float dt) {
 int desktop_render(void *n, size_t s) {
   struct navi_t *navi = (struct navi_t*)n;
 
-  memset(gfx_pixels(), RGB(0, 0, 0), SCREEN_W * SCREEN_H * sizeof(uint32_t));
+  // clear screen
+  draw_bitmap_to_framebuffer(gfx_pixels(), SCREEN_W, SCREEN_H, bg, SCREEN_W, SCREEN_H, 0, 0);
+
+  
 
   navi_update_windows(navi);
   return 1;
+}
+
+
+void desktop_exit(void *n, size_t s) {
+  free(bg);
 }
 
 
@@ -61,6 +76,6 @@ state_interface_t desktop_scene = {
   desktop_enter,
   desktop_tick,
   desktop_render,
-  NULL
+  desktop_exit
 };
 

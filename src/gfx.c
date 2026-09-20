@@ -26,7 +26,7 @@ static char *load_asset_file(const char *asset_name) {
   }
 
   // asset exists, load it into a malloc'd buffer
-  LOG("%s\n", fp);
+  LOG("asset_load: %s\n", fp);
 
   FILE *f = fopen(fp, "rb");
   if (!f) return NULL;

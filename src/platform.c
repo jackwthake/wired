@@ -3,6 +3,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "gfx.h"
 
@@ -148,4 +149,130 @@ unsigned get_asset_path(char *buffer, size_t buffer_size, const char *asset_name
   }
 
   return 0;
+}
+
+
+uint32_t *convert_bmp_to_framebuffer(const char *asset_name, int *width, int *height) {
+  char fp[512];
+  get_asset_path(fp, 512, asset_name);
+
+  LOG("bitmap_load: %s", fp);
+
+  FILE *file = fopen(fp, "rb");
+  if (!file) {
+    LOG("Error: Could not open BMP file %s\n", fp);
+    return NULL;
+  }
+  
+  // Read 54-byte header (BITMAPFILEHEADER + BITMAPINFOHEADER minimum)
+  unsigned char header[54];
+  if (fread(header, 1, sizeof(header), file) != sizeof(header)) {
+    LOG("Error: BMP header too short: %s", fp);
+    fclose(file);
+    return NULL;
+  }
+
+  // Simple little-endian readers
+  #define READ_LE32(p) ((uint32_t)(p)[0] | ((uint32_t)(p)[1] << 8) | ((uint32_t)(p)[2] << 16) | ((uint32_t)(p)[3] << 24))
+  #define READ_LE16(p) ((uint16_t)(p)[0] | ((uint16_t)(p)[1] << 8))
+
+  // Check BMP signature
+  if (header[0] != 'B' || header[1] != 'M') {
+    LOG("Error: Not a BMP file: %s", fp);
+    fclose(file);
+    return NULL;
+  }
+
+  uint32_t data_offset = READ_LE32(&header[10]);
+  int32_t  w = (int32_t)READ_LE32(&header[18]);
+  int32_t  h = (int32_t)READ_LE32(&header[22]);
+  uint16_t planes = READ_LE16(&header[26]);
+  uint16_t bit_count = READ_LE16(&header[28]);
+  uint32_t compression = READ_LE32(&header[30]);
+
+  if (planes != 1) {
+    LOG("Error: Unsupported BMP planes=%u: %s", (unsigned)planes, fp);
+    fclose(file);
+    return NULL;
+  }
+
+  if (compression != 0) {
+    LOG("Error: Compressed BMP not supported: %s", fp);
+    fclose(file);
+    return NULL;
+  }
+
+  int abs_h = h < 0 ? -h : h;
+  int top_down = (h < 0);
+
+  if (w <= 0 || abs_h <= 0) {
+    LOG("Error: Invalid BMP dimensions %dx%d: %s", w, abs_h, fp);
+    fclose(file);
+    return NULL;
+  }
+
+  // Allocate framebuffer
+  uint32_t *framebuffer = malloc((size_t)w * (size_t)abs_h * sizeof(uint32_t));
+  if (!framebuffer) {
+    LOG("Error: Could not allocate memory for framebuffer");
+    fclose(file);
+    return NULL;
+  }
+
+  // Seek to pixel data
+  if (fseek(file, (long)data_offset, SEEK_SET) != 0) {
+    LOG("Error: Failed to seek to pixel data: %s", fp);
+    free(framebuffer);
+    fclose(file);
+    return NULL;
+  }
+
+  if (bit_count == 24) {
+    int row_padding = (4 - (w * 3) % 4) % 4;
+    for (int row = 0; row < abs_h; ++row) {
+      int dst_row = top_down ? row : (abs_h - 1 - row);
+      for (int x = 0; x < w; ++x) {
+        unsigned char bgr[3];
+        if (fread(bgr, 1, 3, file) != 3) {
+          LOG("Error: Unexpected EOF while reading BMP pixels: %s\n");
+          free(framebuffer);
+          fclose(file);
+          return NULL;
+        }
+        uint8_t r = bgr[2];
+        uint8_t g = bgr[1];
+        uint8_t b = bgr[0];
+        framebuffer[dst_row * w + x] = RGB(r, g, b);
+      }
+      if (row_padding) fseek(file, row_padding, SEEK_CUR);
+    }
+  } else if (bit_count == 32) {
+    // 32-bit BMP typically stores in BGRA order
+    for (int row = 0; row < abs_h; ++row) {
+      int dst_row = top_down ? row : (abs_h - 1 - row);
+      for (int x = 0; x < w; ++x) {
+        unsigned char bgra[4];
+        if (fread(bgra, 1, 4, file) != 4) {
+          LOG("Error: Unexpected EOF while reading BMP pixels: %s", fp);
+          free(framebuffer);
+          fclose(file);
+          return NULL;
+        }
+        uint8_t r = bgra[2];
+        uint8_t g = bgra[1];
+        uint8_t b = bgra[0];
+        framebuffer[dst_row * w + x] = RGB(r, g, b);
+      }
+    }
+  } else {
+    LOG("Error: Unsupported BMP bit depth %u: %s", (unsigned)bit_count, fp);
+    free(framebuffer);
+    fclose(file);
+    return NULL;
+  }
+
+  fclose(file);
+  *width = w;
+  *height = abs_h;
+  return framebuffer;
 }

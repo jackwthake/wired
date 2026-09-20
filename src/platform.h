@@ -38,5 +38,6 @@ void platform_shutdown(struct platform *platform);
 
 
 unsigned get_asset_path(char *buffer, size_t buffer_size, const char *asset_name);
+uint32_t *convert_bmp_to_framebuffer(const char *asset_name, int *width, int *height);
 
 #endif // __PLATFORM_H__
