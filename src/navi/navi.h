@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include "apps/apps.h"
 #include "input.h"
 
 struct window;
@@ -44,6 +45,8 @@ struct navi_t {
 
   uint32_t *cursor;
   int cursor_w, cursor_h;
+
+  int last_icon; double last_click_time; int selected_icon;
 };
 
 
@@ -53,13 +56,14 @@ void navi_free(struct navi_t *navi);
 // New windows appear on top and focused. Returns NULL if full.
 struct window *navi_add_window(struct navi_t *navi, unsigned x, unsigned y, unsigned w, unsigned h,
                                char *title, void *udata, unsigned udata_size, navi_win_callback updatefn);
+void navi_launch(struct navi_t *navi, struct app_desc *a);
 
 // Frees the window's framebuffer and title (not udata). The pointer is dead afterwards.
 void navi_close_window(struct navi_t *navi, struct window *win);
 
 // Once per frame: routes input (focus, drag, close button), then runs each
 // window's update callback and draws back to front into gfx_pixels().
-void navi_update_windows(struct navi_t *navi, const struct input *in);
+void navi_update_windows(struct navi_t *navi, struct input *in);
 void navi_draw_cursor(struct navi_t *navi, const struct input *in);
 
 

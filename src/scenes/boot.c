@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../gfx.h"
-#include "../fsm.h"
-#include "navi.h"
+#include "gfx.h"
+#include "fsm.h"
+#include "navi/navi.h"
 
 extern state_machine_t main_state;
 

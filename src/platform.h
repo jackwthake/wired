@@ -4,7 +4,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_opengles2.h>
 
-#include "scenes/input.h"
+#include "navi/input.h"
 
 
 #ifndef LOG

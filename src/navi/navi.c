@@ -8,6 +8,8 @@
 
 #include "font.inc"
 
+#include "navi/apps/apps.h"
+
 #define TITLE_BAR_H 20
 #define GLYPH_WIDTH 8
 #define GLYPH_HEIGHT 16
@@ -16,6 +18,8 @@
 #define COL_TITLE_UNFOCUSED  RGB(30, 30, 52)
 #define COL_TEXT_FOCUSED     RGB(200, 200, 200)
 #define COL_TEXT_UNFOCUSED   RGB(110, 110, 120)
+
+extern struct platform *platform;
 
 
 // ------------------------------------------------------------- drawing
@@ -173,6 +177,28 @@ void navi_init(struct navi_t *navi, unsigned max_open) {
 
   navi->cursor_w = navi->cursor_h = 0;
   navi->cursor = convert_bmp_to_framebuffer("cursor.bmp", &navi->cursor_w, &navi->cursor_h);
+
+  navi->last_icon = navi->selected_icon = -1;
+  navi->last_click_time = platform->platform_time;
+
+  // load program icons
+  unsigned next_icon_x = 10;
+  unsigned next_icon_y = 10;
+  static const unsigned icon_vertical_padding = 20;
+  static const unsigned icon_horizontal_padding = 5;
+
+  for (unsigned i = 0; i < NUM_APPS; ++i) {
+    struct app_desc *app = &apps_registry[i]; 
+    app->icon_px = convert_bmp_to_framebuffer(app->icon, &app->icon_w, &app->icon_h);
+    app->icon_x = next_icon_x;
+    app->icon_y = next_icon_y;
+
+    next_icon_y += app->icon_h + icon_vertical_padding;
+    if (next_icon_y > SCREEN_H * 0.8) {
+      next_icon_y = 10;
+      next_icon_x += app->icon_w + icon_horizontal_padding;
+    }
+  }
 }
 
 
@@ -191,6 +217,11 @@ void navi_free(struct navi_t *navi) {
   free(navi->order);
   free(navi->close_btn);
   free(navi->cursor);
+
+  for (unsigned i = 0; i < NUM_APPS; ++i) {
+    struct app_desc *app = &apps_registry[i]; 
+    app_desc_free(app);
+  }
 
   memset(navi, 0, sizeof *navi);
 }
@@ -237,13 +268,42 @@ struct window *navi_add_window(struct navi_t *navi, unsigned x, unsigned y, unsi
 }
 
 
+void navi_launch(struct navi_t *navi, struct app_desc *a) {
+  void *udata = calloc(1, a->state_size);
+  struct window * w = navi_add_window(navi, 100, 100, a->w, a->h, a->name, udata, a->state_size, a->update);
+
+  if (a->init) {
+    a->init(w);
+  }
+}
+
+
 void navi_close_window(struct navi_t *navi, struct window *win) {
   if (!navi || !win) return;
+  if (win->udata) {
+    free(win->udata);
+    win->udata_size = 0;
+  }
+
   close_slot(navi, (unsigned)(win - navi->open_windows));
 }
 
 
 // ------------------------------------------------------------- input
+
+static int icon_at(struct navi_t *navi, int x, int y) {
+  (void)navi;
+  for (unsigned i = 0; i < NUM_APPS; ++i) {
+    struct app_desc *app = &apps_registry[i];
+
+    if (x >= (int)app->icon_x && x < (int)(app->icon_x + app->icon_w) &&
+        y >= (int)app->icon_y && y < (int)(app->icon_y + app->icon_h + 16)) {
+      return (int)i;
+    }
+  }
+
+  return -1;
+}
 
 static void handle_mouse(struct navi_t *navi, const struct input *in) {
   // dragging
@@ -289,7 +349,27 @@ static void handle_mouse(struct navi_t *navi, const struct input *in) {
       navi->drag_dx = in->mouse_x - (int)w->x;
       navi->drag_dy = in->mouse_y - (int)w->y;
     }
+
+    // A hit on a window consumes the click; do not also treat the same
+    // location as a desktop icon activation.
     return;
+  }
+
+  // no window was hit: this click is on the desktop
+  int hit = icon_at(navi, in->mouse_x, in->mouse_y);
+
+  if (hit >= 0) {
+    if (hit == navi->last_icon && in->time - navi->last_click_time < 0.4) {
+      navi_launch(navi, &apps_registry[hit]);   // second click, same icon, fast enough
+      LOG("launching");
+      navi->last_icon = -1;                     // so a third click doesn't launch again
+    } else {
+      navi->last_icon = hit;                    // first click: remember it
+      navi->last_click_time = in->time;
+    }
+    navi->selected_icon = hit;
+  } else {
+    navi->last_icon = navi->selected_icon = -1;   // clicked empty desktop
   }
 }
 
@@ -332,7 +412,7 @@ void navi_draw_cursor(struct navi_t *navi, const struct input *in) {
 }
 
 
-void navi_update_windows(struct navi_t *navi, const struct input *in) {
+void navi_update_windows(struct navi_t *navi, struct input *in) {
   if (!navi) return;
 
   if (in) handle_mouse(navi, in);
@@ -359,4 +439,6 @@ void navi_update_windows(struct navi_t *navi, const struct input *in) {
     unsigned slot = navi->order[i];
     if (navi->open_windows[slot].close_requested) close_slot(navi, slot);
   }
+
+  in->time = platform->platform_time;
 }

@@ -24,6 +24,8 @@ struct input {
   char text[INPUT_TEXT_MAX];   // UTF-8 typed this frame ("" if none)
   int  keys[INPUT_KEYS_MAX];   // enum navi_key presses this frame
   int  key_count;
+
+  double time;
 };
 
 #endif // __INPUT_H__
