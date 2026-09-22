@@ -361,7 +361,7 @@ static void handle_mouse(struct navi_t *navi, const struct input *in) {
   if (hit >= 0) {
     if (hit == navi->last_icon && in->time - navi->last_click_time < 0.4) {
       navi_launch(navi, &apps_registry[hit]);   // second click, same icon, fast enough
-      LOG("launching");
+      LOG("navi: launching: %s", apps_registry[hit].name);
       navi->last_icon = -1;                     // so a third click doesn't launch again
     } else {
       navi->last_icon = hit;                    // first click: remember it
