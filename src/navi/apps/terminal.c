@@ -17,6 +17,7 @@
 
 static const char *prompt_sep = " $ ";
 
+
 static struct history_entry_t *create_history_entry(char *prompt, char *line, unsigned is_cmd) {
   struct history_entry_t *e = calloc(1, sizeof(struct history_entry_t));
 
@@ -49,16 +50,124 @@ static void free_history_entry(struct history_entry_t *e) {
 }
 
 
+// ---------- Commands --------------------------------------------------------
+
+typedef void(*cmd_run)(struct terminal_t *t, int argc, char **argv);
+
+struct command {
+  const char *name;
+  cmd_run runner;
+};
+
+
+static void cmd_ls(struct terminal_t *t, int argc, char **argv) {
+  /* walk t->cwd->children */
+  struct vfs_node_t *n= t->cwd->children;
+  while (n) {
+    struct history_entry_t *res;
+    if (n->kind == VFS_DIR) {
+      char buf[FILENAME_MAX];
+      snprintf(buf, FILENAME_MAX, "%s/", n->name);
+
+      res = create_history_entry(NULL, buf, 0);
+    } else {
+      res = create_history_entry(NULL, n->name, 0);
+    }
+
+    t->lines[t->num_lines++] = res;
+    n = n->next;
+  }
+}
+
+
+static void cmd_cd(struct terminal_t *t, int argc, char **argv) {
+  /* vfs_get_node, update t->cwd */ 
+}
+
+
+static void cmd_cat(struct terminal_t *t, int argc, char **argv) {
+  /* find file, print content or generate() */ 
+}
+
+
+#define NUM_COMMANDS 3
+static struct command commands[NUM_COMMANDS] = {
+  { "ls",  cmd_ls },
+  { "cd",  cmd_cd },
+  { "cat", cmd_cat },
+};
+
+
+char** tokenize_input(char *str, size_t *out_count) {
+  if (str == NULL || out_count == NULL) {
+    if (out_count) *out_count = 0;
+    return NULL;
+  }
+  
+  size_t capacity = 8;
+  size_t count = 0;
+  char **tokens = malloc(capacity * sizeof(char*));
+  if (!tokens) {
+    *out_count = 0;
+    return NULL;
+  }
+  
+  char *token = strtok(str, " ");
+  while (token != NULL) {
+    if (count >= capacity) {
+      capacity *= 2;
+      char **new_tokens = realloc(tokens, capacity * sizeof(char*));
+      if (!new_tokens) {
+        free(tokens);
+        *out_count = 0;
+        return NULL;
+      }
+      tokens = new_tokens;
+    }
+    
+    // Store pointer directly to the segment in str
+    tokens[count++] = token;
+    token = strtok(NULL, " ");
+  }
+  
+  *out_count = count;
+  return tokens;
+}
+
+
 static void process_line(struct terminal_t *t) {
   if (t->num_lines > t->max_lines) return; // TODO: wrap history;
 
   struct history_entry_t *e = create_history_entry(t->cwd_str, t->input, 1);
   t->lines[t->num_lines++] = e;
 
-  // temporary echo command
-  struct history_entry_t *res = create_history_entry(NULL, t->input, 0);
-  t->lines[t->num_lines++] = res;
+  if (strcmp(t->input, "") == 0) {
+    goto skip_cmd;
+  }
 
+  bool cmd_found = false;
+  for (unsigned i = 0; i < NUM_COMMANDS; ++i) {
+    if (strcmp(t->input, commands[i].name) == 0) {
+      char **argv;
+      size_t argc;
+
+      argv = tokenize_input(t->input, &argc);
+      commands[i].runner(t, argc, argv);
+
+      if (argv)
+        free(argv);
+
+      cmd_found = true;
+      break;
+    }
+  }
+
+  if (!cmd_found) {
+    struct history_entry_t *res = create_history_entry(NULL, "Unrecognized command.", 0);
+    t->lines[t->num_lines++] = res;
+  }
+
+skip_cmd:  
   t->history_scroll = 0;
   t->input[0] = '\0';
 
@@ -67,6 +176,8 @@ static void process_line(struct terminal_t *t) {
   vfs_get_node_path(t->cwd, t->cwd_str, PROMPT_LENGTH);
 }
 
+
+// ---------- Terminal Backend ------------------------------------------------
 
 static void get_prev(struct terminal_t *t) {
   if (!t || !t->lines || t->num_lines == 0) return;
@@ -140,7 +251,7 @@ void terminal_update(struct window *win) {
   if (!t || !in) return;
 
   // grab text input
-  strcat(t->input, in->text);
+  strncat(t->input, in->text, INPUT_LENGTH);
   
   // check for return key
   for (int i = 0; i < in->key_count; ++i) {
