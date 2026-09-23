@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-void notes_init(struct window *win) {
+void notes_init(struct window *win, struct vfs_node_t *path) {
 
 }
 

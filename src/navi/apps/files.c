@@ -2,7 +2,7 @@
 #include "gfx.h"
 
 
-void files_init(struct window *win) {
+void files_init(struct window *win, struct vfs_node_t *path) {
 
 }
 

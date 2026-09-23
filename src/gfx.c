@@ -17,46 +17,6 @@ static uint32_t pixels[SCREEN_W * SCREEN_H];
 static int      flip_y;      // 1 when the last thing drawn was the CPU buffer
 static GLint    crt_uFlip;
 
-static char *load_asset_file(const char *asset_name) {
-  char fp[512];
-  size_t path_len = sizeof fp;
-
-  if (!get_asset_path(fp, path_len, asset_name)) {
-    return NULL;
-  }
-
-  // asset exists, load it into a malloc'd buffer
-  LOG("asset_load: %s\n", fp);
-
-  FILE *f = fopen(fp, "rb");
-  if (!f) return NULL;
-
-  fseek(f, 0, SEEK_END);
-  long size = ftell(f);
-  fseek(f, 0, SEEK_SET);
-
-  if (size <= 0) {
-    fclose(f);
-    return NULL;
-  }
-
-  char *buf = malloc((size_t)size + 1);
-  if (!buf) {
-    fclose(f);
-    return NULL;
-  }
-
-  if (fread(buf, 1, (size_t)size, f) != (size_t)size) {
-    free(buf);
-    fclose(f);
-    return NULL;
-  }
-
-  buf[size] = '\0';
-  fclose(f);
-  return buf;
-}
-
 
 static GLuint compile(GLenum type, const char* src) {
   GLuint s = glCreateShader(type);

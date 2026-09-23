@@ -214,6 +214,55 @@ unsigned get_asset_path(char *buffer, size_t buffer_size, const char *asset_name
 }
 
 
+char *load_asset_file(const char *asset_name) {
+  char fp[512];
+  size_t path_len = sizeof fp;
+
+  if (!get_asset_path(fp, path_len, asset_name)) {
+    return NULL;
+  }
+
+  return load_asset_file_abs(fp);
+}
+
+
+char *load_asset_file_abs(const char *asset_name) {
+  size_t path_len = sizeof asset_name;
+
+  // asset exists, load it into a malloc'd buffer
+  LOG("asset_load: %s\n", asset_name);
+
+  FILE *f = fopen(asset_name, "rb");
+  if (!f) return NULL;
+
+  fseek(f, 0, SEEK_END);
+  long size = ftell(f);
+  fseek(f, 0, SEEK_SET);
+
+  if (size <= 0) {
+    fclose(f);
+    return NULL;
+  }
+
+  char *buf = malloc((size_t)size + 1);
+  if (!buf) {
+    fclose(f);
+    return NULL;
+  }
+
+  if (fread(buf, 1, (size_t)size, f) != (size_t)size) {
+    free(buf);
+    fclose(f);
+    return NULL;
+  }
+
+  buf[size] = '\0';
+  fclose(f);
+  return buf;
+}
+
+
+
 uint32_t *convert_bmp_to_framebuffer(const char *asset_name, int *width, int *height) {
   char fp[512];
   get_asset_path(fp, 512, asset_name);

@@ -5,6 +5,7 @@
 
 #include "apps/apps.h"
 #include "input.h"
+#include "vfs.h"
 
 struct window;
 typedef void (*navi_win_callback)(struct window *);
@@ -17,6 +18,7 @@ struct window {
 
   void *udata;              // owned by whoever created the window
   unsigned udata_size;
+  struct vfs_node_t *fs;
 
   navi_win_callback update;
 
@@ -47,6 +49,8 @@ struct navi_t {
   int cursor_w, cursor_h;
 
   int last_icon; double last_click_time; int selected_icon;
+
+  struct vfs_node_t *fs;
 };
 
 
@@ -55,8 +59,8 @@ void navi_free(struct navi_t *navi);
 
 // New windows appear on top and focused. Returns NULL if full.
 struct window *navi_add_window(struct navi_t *navi, unsigned x, unsigned y, unsigned w, unsigned h,
-                               char *title, void *udata, unsigned udata_size, navi_win_callback updatefn);
-void navi_launch(struct navi_t *navi, struct app_desc *a);
+                               const char *title, void *udata, unsigned udata_size, navi_win_callback updatefn);
+void navi_launch(struct navi_t *navi, struct app_desc *a, struct vfs_node_t *path);
 
 // Frees the window's framebuffer and title (not udata). The pointer is dead afterwards.
 void navi_close_window(struct navi_t *navi, struct window *win);

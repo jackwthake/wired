@@ -111,7 +111,7 @@ static void get_next(struct terminal_t *t) {
 }
 
 
-void terminal_init(struct window *win) {
+void terminal_init(struct window *win, struct vfs_node_t *path) {
   struct terminal_t *t = win->udata;
 
   t->lines = calloc(HISTORY_LENGTH, sizeof(struct terminal_t *));

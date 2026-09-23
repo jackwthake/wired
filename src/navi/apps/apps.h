@@ -2,6 +2,7 @@
 #define __APPS_H__
 
 #include <stdint.h>
+#include <vfs.h>
 
 struct window;
 
@@ -10,10 +11,12 @@ struct app_desc {
   const char *icon;            // "icons/testpattern.bmp"
   unsigned w, h;               // default content size
   unsigned state_size;         // navi callocs this into win->udata
-  void (*init)(struct window *win);      // optional
+  void (*init)(struct window *win, struct vfs_node_t *path); // optional
   void (*update)(struct window *win);
   void (*cleanup)(struct window *win);   // optional
 
+  const char *default_path;
+  
   // filled in by navi_init:
   uint32_t *icon_px, icon_w, icon_h;
   unsigned icon_x, icon_y;
@@ -29,15 +32,15 @@ void app_desc_free(struct app_desc *a);
 
 // Programs
 
-extern void files_init(struct window *);
+extern void files_init(struct window *, struct vfs_node_t *path);
 extern void files_update(struct window *);
 extern void files_close(struct window *);
 
-extern void notes_init(struct window *);
+extern void notes_init(struct window *, struct vfs_node_t *path);
 extern void notes_update(struct window *);
 extern void notes_close(struct window *);
 
-extern void terminal_init(struct window *);
+extern void terminal_init(struct window *, struct vfs_node_t *path);
 extern void terminal_update(struct window *);
 extern void terminal_close(struct window *);
 

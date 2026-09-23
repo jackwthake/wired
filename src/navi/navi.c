@@ -199,6 +199,13 @@ void navi_init(struct navi_t *navi, unsigned max_open) {
       next_icon_x += app->icon_w + icon_horizontal_padding;
     }
   }
+
+  // load file system
+  char fp[512];
+  size_t path_len = sizeof fp;
+  get_asset_path(fp, path_len, "fs");
+
+  navi->fs = vfs_load_dir(fp, NULL);
 }
 
 
@@ -210,6 +217,7 @@ void navi_free(struct navi_t *navi) {
     if (w->alive) {
       free(w->framebuff);
       free(w->title);
+      free(w->udata);
     }
   }
 
@@ -223,12 +231,13 @@ void navi_free(struct navi_t *navi) {
     app_desc_free(app);
   }
 
+  vfs_free(navi->fs);
   memset(navi, 0, sizeof *navi);
 }
 
 
 struct window *navi_add_window(struct navi_t *navi, unsigned x, unsigned y, unsigned w, unsigned h,
-                               char *title, void *udata, unsigned udata_size, navi_win_callback updatefn) {
+                               const char *title, void *udata, unsigned udata_size, navi_win_callback updatefn) {
   if (!navi || navi->count >= navi->max_windows) return NULL;
 
   // first free slot (slots are reused after a window closes)
@@ -258,6 +267,7 @@ struct window *navi_add_window(struct navi_t *navi, unsigned x, unsigned y, unsi
 
   win->udata = udata;
   win->udata_size = udata_size;
+  win->fs = navi->fs;
   win->update = updatefn;
   win->alive = 1;
 
@@ -268,12 +278,19 @@ struct window *navi_add_window(struct navi_t *navi, unsigned x, unsigned y, unsi
 }
 
 
-void navi_launch(struct navi_t *navi, struct app_desc *a) {
+void navi_launch(struct navi_t *navi, struct app_desc *a, struct vfs_node_t *path) {
   void *udata = calloc(1, a->state_size);
   struct window * w = navi_add_window(navi, 100, 100, a->w, a->h, a->name, udata, a->state_size, a->update);
 
   if (a->init) {
-    a->init(w);
+    if (path) {
+      a->init(w, path);
+    } else if (a->default_path) {
+      // TODO: resolve vfs path to a node
+      a->init(w, navi->fs);
+    } else {
+      a->init(w, navi->fs);
+    }
   }
 }
 
@@ -360,11 +377,12 @@ static void handle_mouse(struct navi_t *navi, const struct input *in) {
 
   if (hit >= 0) {
     if (hit == navi->last_icon && in->time - navi->last_click_time < 0.4) {
-      navi_launch(navi, &apps_registry[hit]);   // second click, same icon, fast enough
+      // TODO: resolve the apps default path to an actual node
+      navi_launch(navi, &apps_registry[hit], navi->fs);    // second click, same icon, fast enough
       LOG("navi: launching: %s", apps_registry[hit].name);
-      navi->last_icon = -1;                     // so a third click doesn't launch again
+      navi->last_icon = -1;                                // so a third click doesn't launch again
     } else {
-      navi->last_icon = hit;                    // first click: remember it
+      navi->last_icon = hit;                               // first click: remember it
       navi->last_click_time = in->time;
     }
     navi->selected_icon = hit;
