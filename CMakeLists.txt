@@ -41,6 +41,7 @@ target_link_libraries(${PROJECT_NAME}
     SDL3::SDL3
     ${EGL_LIBRARIES}
     ${GLES_LIBRARIES}
+    m
 )
 
 # --- Copy assets to build directory ---

@@ -3,13 +3,15 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include "terminal.h"
+
 #include "test_pattern.h"
 
 struct app_desc apps_registry[NUM_APPS] = {
   { "Trash", "icons/trash.bmp", 400, 320, 0, files_init, files_update, files_close },
   { "File", "icons/file_explorer.bmp", 400, 320, 0, files_init, files_update, files_close },
   { "Note", "icons/notes.bmp", 240, 320, 0, notes_init, notes_update, notes_close },
-  { "Term", "icons/terminal.bmp", 400, 320, 0, NULL, terminal_update, NULL },
+  { "Term", "icons/terminal.bmp", 400, 320, sizeof(struct terminal_t), terminal_init, terminal_update, terminal_close },
   { "Test", "icons/test_pattern.bmp", 200, 160, 0, NULL, draw_test_pattern, NULL },
 };
 

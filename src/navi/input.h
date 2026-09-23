@@ -10,7 +10,7 @@ enum navi_key {
   NK_NONE = 0,
   NK_ENTER, NK_BACKSPACE, NK_TAB,
   NK_UP, NK_DOWN, NK_LEFT, NK_RIGHT,
-  NK_HOME, NK_END, NK_DELETE
+  NK_HOME, NK_END, NK_DELETE, NK_ESCAPE
 };
 
 // One frame of input. Filled by the platform layer, read by navi.

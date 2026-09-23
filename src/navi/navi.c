@@ -19,25 +19,25 @@
 #define COL_TEXT_FOCUSED     RGB(200, 200, 200)
 #define COL_TEXT_UNFOCUSED   RGB(110, 110, 120)
 
-extern struct platform *platform;
+extern struct platform platform;
 
 
 // ------------------------------------------------------------- drawing
 
-static void draw_rect(uint32_t *pixels, unsigned x, unsigned y, unsigned w, unsigned h, uint32_t color) {
+void draw_rect(uint32_t *pixels, unsigned fb_w, unsigned fb_h, unsigned x, unsigned y, unsigned w, unsigned h, uint32_t color) {
   if (!pixels || w == 0 || h == 0) {
     return;
   }
 
   for (unsigned dy = 0; dy < h; ++dy) {
     unsigned py = y + dy;
-    if (py >= SCREEN_H) break;
+    if (py >= fb_h) break;
 
     for (unsigned dx = 0; dx < w; ++dx) {
       unsigned px = x + dx;
-      if (px >= SCREEN_W) break;
+      if (px >= fb_w) break;
 
-      pixels[py * SCREEN_W + px] = color;
+      pixels[py * fb_w + px] = color;
     }
   }
 }
@@ -179,7 +179,7 @@ void navi_init(struct navi_t *navi, unsigned max_open) {
   navi->cursor = convert_bmp_to_framebuffer("cursor.bmp", &navi->cursor_w, &navi->cursor_h);
 
   navi->last_icon = navi->selected_icon = -1;
-  navi->last_click_time = platform->platform_time;
+  navi->last_click_time = platform.platform_time;
 
   // load program icons
   unsigned next_icon_x = 10;
@@ -379,7 +379,7 @@ static void handle_mouse(struct navi_t *navi, const struct input *in) {
 static void draw_window(struct navi_t *navi, struct window *win, uint32_t *pixels) {
   int tt = title_top(win);
 
-  draw_rect(pixels, win->x, (unsigned)tt, win->w, TITLE_BAR_H,
+  draw_rect(pixels, SCREEN_W, SCREEN_H, win->x, (unsigned)tt, win->w, TITLE_BAR_H,
             win->focused ? COL_TITLE_FOCUSED : COL_TITLE_UNFOCUSED);
 
   draw_string_to_framebuffer(pixels, win->title, (int)win->x + 2, tt + 2, NULL, NULL,
@@ -440,5 +440,5 @@ void navi_update_windows(struct navi_t *navi, struct input *in) {
     if (navi->open_windows[slot].close_requested) close_slot(navi, slot);
   }
 
-  in->time = platform->platform_time;
+  in->time = platform.platform_time;
 }

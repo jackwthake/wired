@@ -37,7 +37,9 @@ extern void notes_init(struct window *);
 extern void notes_update(struct window *);
 extern void notes_close(struct window *);
 
+extern void terminal_init(struct window *);
 extern void terminal_update(struct window *);
+extern void terminal_close(struct window *);
 
 extern void draw_test_pattern(struct window *);
 

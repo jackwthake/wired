@@ -27,7 +27,14 @@ void desktop_enter(void *n, size_t s) {
 
 
 void desktop_tick(void *n, size_t s, float dt) {
-
+  for (int i = 0; i < platform.input.key_count; ++i) {
+    switch (platform.input.keys[i]) {
+      case NK_ESCAPE:
+        platform.running = false;
+        break;
+      default: break;
+    }
+  }
 }
 
 

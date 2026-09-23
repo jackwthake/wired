@@ -7,8 +7,10 @@
 #include "gfx.h"
 #include "fsm.h"
 #include "navi/navi.h"
+#include "platform.h"
 
 extern state_machine_t main_state;
+extern struct platform platform;
 
 static const char *boot_sequence[] = {
   "NAVI/OS 0.9.3",
@@ -48,6 +50,22 @@ void boot_tick(void *n, size_t s, float dt) {
 
   if (lines_revealed > max_lines) {
     fsm_change_state(&main_state, DESKTOP_STATE);
+  }
+
+  for (int i = 0; i < platform.input.key_count; ++i) {
+    switch (platform.input.keys[i]) {
+      case NK_ESCAPE:
+        platform.running = false;
+        break;
+
+#ifdef DEBUG // in debug mode, enter skips boot screen
+      case NK_ENTER:
+        fsm_change_state(&main_state, DESKTOP_STATE);
+        break;
+#endif
+
+      default: break;
+    }
   }
 }
 

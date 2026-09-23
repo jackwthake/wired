@@ -8,12 +8,10 @@
 enum states {
   BOOT_STATE = 0,
   DESKTOP_STATE,
-  PAUSE_STATE,
   NUM_STATES
 };
 
 extern state_interface_t boot_scene;
 extern state_interface_t desktop_scene; 
-extern state_interface_t pause_scene; 
 
 #endif

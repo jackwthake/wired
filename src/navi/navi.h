@@ -69,6 +69,7 @@ void navi_draw_cursor(struct navi_t *navi, const struct input *in);
 
 // Drawing helpers. The *_fb variants draw into any buffer (e.g. a window's own
 // framebuff); the older names draw into the full-screen buffer.
+void draw_rect(uint32_t *pixels, unsigned fb_w, unsigned fb_h, unsigned x, unsigned y, unsigned w, unsigned h, uint32_t color);
 void draw_bitmap_to_framebuffer(uint32_t *framebuffer, int fb_w, int fb_h, uint32_t *bitmap, int bmp_w, int bmp_h, int x_offset, int y_offset);
 void draw_string_to_framebuffer(uint32_t *framebuffer, const char *str, int x_offset, int y_offset, int *next_char_x, int *next_char_y, uint32_t color);
 void draw_string_fb(uint32_t *fb, int fb_w, int fb_h, const char *str, int x, int y, int *next_x, int *next_y, uint32_t color);

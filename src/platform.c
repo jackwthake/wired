@@ -85,11 +85,6 @@ void platform_update(struct platform *platform) {
         break;
  
       case SDL_EVENT_KEY_DOWN: {
-        if (e.key.key == SDLK_ESCAPE) {
-          platform->running = false;
-          break;
-        }
- 
         int k = NK_NONE;
         switch (e.key.key) {
           case SDLK_RETURN:    k = NK_ENTER;     break;
@@ -102,6 +97,7 @@ void platform_update(struct platform *platform) {
           case SDLK_HOME:      k = NK_HOME;      break;
           case SDLK_END:       k = NK_END;       break;
           case SDLK_DELETE:    k = NK_DELETE;    break;
+          case SDLK_ESCAPE:    k = NK_ESCAPE;    break;
           default: break;
         }
         if (k != NK_NONE && in->key_count < INPUT_KEYS_MAX) {
