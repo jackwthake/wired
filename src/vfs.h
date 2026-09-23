@@ -23,7 +23,7 @@ struct vfs_node_t {
 
   // optional: for files whose content is computed rather than static
   // (a resident-written log, a live process list)
-  void (*generate)(struct vfs_node_t *self, char *out, size_t out_size);
+  void (*generate)(struct vfs_node_t *self);
 };
 
 
@@ -34,8 +34,13 @@ void vfs_free(struct vfs_node_t *n);
 
 
 // searches passed node and it's children for the specified path
+// returns NULL if path is invalid
 struct vfs_node_t *vfs_get_node(const struct vfs_node_t *fs, const char *path);
 
+// gets string representation of passed node's path - buf must be allocated by caller
 void vfs_get_node_path(const struct vfs_node_t *fs, char *buf, size_t buf_len);
+
+// returns pointer to child node if it is present in passed node's children
+struct vfs_node_t *vfs_is_child(const struct vfs_node_t *root, char *name, unsigned trim_trailing_slash);
 
 #endif

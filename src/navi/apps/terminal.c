@@ -52,6 +52,13 @@ static void free_history_entry(struct history_entry_t *e) {
 
 // ---------- Commands --------------------------------------------------------
 
+#define CMD_STDOUT(prompt, str, is_cmd)                                     \
+do {                                                                        \
+  struct history_entry_t *res = create_history_entry(prompt, str, is_cmd);  \
+  t->lines[t->num_lines++] = res;                                           \
+} while (0)
+
+
 typedef void(*cmd_run)(struct terminal_t *t, int argc, char **argv);
 
 struct command {
@@ -61,32 +68,89 @@ struct command {
 
 
 static void cmd_ls(struct terminal_t *t, int argc, char **argv) {
-  /* walk t->cwd->children */
-  struct vfs_node_t *n= t->cwd->children;
+  if (argc > 2) {
+    CMD_STDOUT(NULL, "USAGE: ls <directory>(optional)", 0);
+    return;
+  }
+
+  struct vfs_node_t *n;
+  
+  if (argc == 2) {
+    // TODO: make this accept multiple '../'s to go back multiple levels
+    if (strcmp(argv[1], "..") == 0 || strcmp(argv[1], "../") == 0) {
+      n = t->cwd->parent ? t->cwd->parent : t->cwd;
+    } else {
+      n = vfs_is_child(t->cwd, argv[1], true);
+  
+      if (!n) {
+        CMD_STDOUT(NULL, "Directory does not exist.", 0);
+        return;
+      }
+    }
+
+    n = n->children;
+  } else {
+    n = t->cwd->children;
+  }
+
   while (n) {
-    struct history_entry_t *res;
     if (n->kind == VFS_DIR) {
       char buf[FILENAME_MAX];
       snprintf(buf, FILENAME_MAX, "%s/", n->name);
 
-      res = create_history_entry(NULL, buf, 0);
+      CMD_STDOUT(NULL, buf, 0);
     } else {
-      res = create_history_entry(NULL, n->name, 0);
+      CMD_STDOUT(NULL, n->name, 0);
     }
 
-    t->lines[t->num_lines++] = res;
     n = n->next;
   }
 }
 
 
 static void cmd_cd(struct terminal_t *t, int argc, char **argv) {
-  /* vfs_get_node, update t->cwd */ 
+  if (argc != 2) {
+    CMD_STDOUT(NULL, "USAGE: cd <directory>", 0);
+    return;
+  }
+
+  // TODO: make this accept multiple '../'s to go back multiple levels
+  if (strcmp("..", argv[1]) == 0 || strcmp("../", argv[1]) == 0) {
+    if (!t->cwd->parent) return;
+
+    t->cwd = t->cwd->parent;
+    return;
+  }
+
+  struct vfs_node_t *n = vfs_is_child(t->cwd, argv[1], true);
+
+  if (!n || n->kind != VFS_DIR) {
+    CMD_STDOUT(NULL, "Directory does not exist.", 0);
+    return;
+  }
+
+  t->cwd = n;
 }
 
 
 static void cmd_cat(struct terminal_t *t, int argc, char **argv) {
-  /* find file, print content or generate() */ 
+  if (argc != 2) {
+    CMD_STDOUT(NULL, "USAGE: cat <file>", 0);
+    return;
+  }
+
+  struct vfs_node_t *n = vfs_is_child(t->cwd, argv[1], false);
+
+  if (!n || n->kind != VFS_FILE) {
+    CMD_STDOUT(NULL, "File does not exist or is a directory.", 0);
+    return;
+  }
+
+  if (n->generate) {
+    n->generate(n);
+  }
+
+  CMD_STDOUT(NULL, n->content, 0);
 }
 
 
@@ -138,20 +202,20 @@ char** tokenize_input(char *str, size_t *out_count) {
 static void process_line(struct terminal_t *t) {
   if (t->num_lines > t->max_lines) return; // TODO: wrap history;
 
-  struct history_entry_t *e = create_history_entry(t->cwd_str, t->input, 1);
-  t->lines[t->num_lines++] = e;
+  CMD_STDOUT(t->cwd_str, t->input, 1);
 
   if (strcmp(t->input, "") == 0) {
     goto skip_cmd;
   }
 
+  char **argv;
+  size_t argc;
+
+  argv = tokenize_input(t->input, &argc);
+
   bool cmd_found = false;
   for (unsigned i = 0; i < NUM_COMMANDS; ++i) {
-    if (strcmp(t->input, commands[i].name) == 0) {
-      char **argv;
-      size_t argc;
-
-      argv = tokenize_input(t->input, &argc);
+    if (strcmp(argv[0], commands[i].name) == 0) {
       commands[i].runner(t, argc, argv);
 
       if (argv)
@@ -163,8 +227,7 @@ static void process_line(struct terminal_t *t) {
   }
 
   if (!cmd_found) {
-    struct history_entry_t *res = create_history_entry(NULL, "Unrecognized command.", 0);
-    t->lines[t->num_lines++] = res;
+    CMD_STDOUT(NULL, "Unrecognized command.", 0);
   }
 
 skip_cmd:  
@@ -257,6 +320,11 @@ void terminal_update(struct window *win) {
   for (int i = 0; i < in->key_count; ++i) {
     switch (in->keys[i]) {
       case NK_ENTER:
+        if (strcmp(t->input, "exit") == 0) {
+          win->close_requested = 1;
+          return;
+        }
+
         process_line(t);
         break;
       

@@ -158,3 +158,25 @@ static void vfs_get_node_path_recurse(const struct vfs_node_t *n, char *buf, siz
 void vfs_get_node_path(const struct vfs_node_t *fs, char *buf, size_t buf_len) {
   vfs_get_node_path_recurse(fs, buf, buf_len, 0);
 }
+
+
+struct vfs_node_t *vfs_is_child(const struct vfs_node_t *root, char *name, unsigned trim_trailing_slash) {
+  if (!root || !name || root->kind == VFS_FILE || !root->children) return NULL;
+
+  if (trim_trailing_slash) {
+    size_t name_len = strlen(name);
+    
+    // Check if the string is not empty and the last character is a slash
+    if (name_len > 0 && name[name_len - 1] == '/') {
+      name[name_len - 1] = '\0';
+    }
+  }
+
+  struct vfs_node_t *head = root->children;
+  while (head) {
+    if (strcmp(head->name, name) == 0) return head;
+    head = head->next;
+  }
+
+  return NULL;
+}
