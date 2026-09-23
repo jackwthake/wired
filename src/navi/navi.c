@@ -286,8 +286,8 @@ void navi_launch(struct navi_t *navi, struct app_desc *a, struct vfs_node_t *pat
     if (path) {
       a->init(w, path);
     } else if (a->default_path) {
-      // TODO: resolve vfs path to a node
-      a->init(w, navi->fs);
+      struct vfs_node_t *n = vfs_get_node(navi->fs, a->default_path);
+      a->init(w, n);
     } else {
       a->init(w, navi->fs);
     }
@@ -377,8 +377,7 @@ static void handle_mouse(struct navi_t *navi, const struct input *in) {
 
   if (hit >= 0) {
     if (hit == navi->last_icon && in->time - navi->last_click_time < 0.4) {
-      // TODO: resolve the apps default path to an actual node
-      navi_launch(navi, &apps_registry[hit], navi->fs);    // second click, same icon, fast enough
+      navi_launch(navi, &apps_registry[hit], NULL);        // second click, same icon, fast enough
       LOG("navi: launching: %s", apps_registry[hit].name);
       navi->last_icon = -1;                                // so a third click doesn't launch again
     } else {

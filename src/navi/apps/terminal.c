@@ -52,7 +52,7 @@ static void free_history_entry(struct history_entry_t *e) {
 static void process_line(struct terminal_t *t) {
   if (t->num_lines > t->max_lines) return; // TODO: wrap history;
 
-  struct history_entry_t *e = create_history_entry(t->cwd, t->input, 1);
+  struct history_entry_t *e = create_history_entry(t->cwd_str, t->input, 1);
   t->lines[t->num_lines++] = e;
 
   // temporary echo command
@@ -61,6 +61,10 @@ static void process_line(struct terminal_t *t) {
 
   t->history_scroll = 0;
   t->input[0] = '\0';
+
+  // update working directory string if the command changed it
+  t->cwd_str[0] = '\0';
+  vfs_get_node_path(t->cwd, t->cwd_str, PROMPT_LENGTH);
 }
 
 
@@ -115,14 +119,15 @@ void terminal_init(struct window *win, struct vfs_node_t *path) {
   struct terminal_t *t = win->udata;
 
   t->lines = calloc(HISTORY_LENGTH, sizeof(struct terminal_t *));
-  t->cwd = calloc(PROMPT_LENGTH, sizeof(char));
+  t->cwd_str = calloc(PROMPT_LENGTH, sizeof(char));
   t->input = calloc(INPUT_LENGTH, sizeof(char));
 
   t->num_lines = 0;
   t->max_lines = HISTORY_LENGTH;
   t->history_scroll = 0;
   
-  strcpy(t->cwd, "/home/");
+  t->cwd = path;
+  vfs_get_node_path(t->cwd, t->cwd_str, PROMPT_LENGTH);
 }
 
 
@@ -181,7 +186,7 @@ void terminal_update(struct window *win) {
   }
 
   // draw prompt
-  draw_string_fb(win->framebuff, win->w, win->h, t->cwd, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+  draw_string_fb(win->framebuff, win->w, win->h, t->cwd_str, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
   draw_string_fb(win->framebuff, win->w, win->h, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
   draw_string_fb(win->framebuff, win->w, win->h, t->input, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
 
@@ -212,8 +217,8 @@ void terminal_close(struct window *win) {
       free(t->lines);
     }
 
-    if (t->cwd)   free(t->cwd);
-    if (t->input) free(t->input);
+    if (t->cwd_str) free(t->cwd_str);
+    if (t->input)   free(t->input);
 
     t->num_lines = 0;
     t->max_lines = 0;

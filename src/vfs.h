@@ -33,7 +33,9 @@ void vfs_append(struct vfs_node_t *parent, struct vfs_node_t *child);
 void vfs_free(struct vfs_node_t *n);
 
 
-struct vfs_node_t *vfs_get_node_abs(const struct vfs_node_t *fs, char *path);
+// searches passed node and it's children for the specified path
+struct vfs_node_t *vfs_get_node(const struct vfs_node_t *fs, const char *path);
+
 void vfs_get_node_path(const struct vfs_node_t *fs, char *buf, size_t buf_len);
 
 #endif

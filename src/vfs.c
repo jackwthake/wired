@@ -70,7 +70,13 @@ void vfs_append(struct vfs_node_t *parent, struct vfs_node_t *n) {
 
 
 struct vfs_node_t *vfs_load_dir(const char *real_path, struct vfs_node_t *parent) {
-  struct vfs_node_t *dir = vfs_new_node(vfs_basename(real_path), VFS_DIR, parent);
+  struct vfs_node_t *dir;
+  
+  if (parent == NULL) {
+    dir = vfs_new_node("/", VFS_DIR, parent); 
+  } else {
+    dir = vfs_new_node(vfs_basename(real_path), VFS_DIR, parent);
+  }
 
   DIR *d = opendir(real_path);
   if (!d) return dir;
@@ -99,4 +105,50 @@ struct vfs_node_t *vfs_load_dir(const char *real_path, struct vfs_node_t *parent
 
   closedir(d);
   return dir;
+}
+
+
+struct vfs_node_t *vfs_get_node(const struct vfs_node_t *fs_root, const char *path) {
+  char *delim = "/";
+  char *fp = calloc(strlen(path) + 1, sizeof(char));
+  strcpy(fp, path);
+  
+  struct vfs_node_t *res = (struct vfs_node_t *)fs_root;
+  char *token = strtok(fp, delim);
+
+  do {
+    struct vfs_node_t *head = res->children;
+    while (head) { // search children for next token's name
+      // if token matches set result and move a level deeper
+      if (strcmp(head->name, token) == 0) {
+        res = head;
+        break;
+      }
+
+      head = head->next;
+    }
+
+  } while ((token = strtok(NULL, delim)) != NULL);
+
+  free(fp);
+  return res;
+}
+
+
+// build node's path using tail recursion
+static void vfs_get_node_path_recurse(const struct vfs_node_t *n, char *buf, size_t buf_len, unsigned level) {
+  if (!n) return;
+
+  vfs_get_node_path_recurse(n->parent, buf, buf_len, level + 1);
+
+  strncat(buf, n->name, buf_len);
+  if (strcmp(n->name, "/") != 0) { // don't append '/' to root dir because it's already named '/'
+    if (n->kind == VFS_DIR || level != 0)
+      strncat(buf, "/", buf_len);
+  }
+}
+
+
+void vfs_get_node_path(const struct vfs_node_t *fs, char *buf, size_t buf_len) {
+  vfs_get_node_path_recurse(fs, buf, buf_len, 0);
 }
