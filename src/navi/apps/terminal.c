@@ -76,16 +76,16 @@ static void cmd_ls(struct terminal_t *t, int argc, char **argv) {
   struct vfs_node_t *n;
   
   if (argc == 2) {
-    // TODO: make this accept multiple '../'s to go back multiple levels
-    if (strcmp(argv[1], "..") == 0 || strcmp(argv[1], "../") == 0) {
-      n = t->cwd->parent ? t->cwd->parent : t->cwd;
-    } else {
-      n = vfs_is_child(t->cwd, argv[1], true);
-  
-      if (!n) {
-        CMD_STDOUT(NULL, "Directory does not exist.", 0);
-        return;
-      }
+    n = vfs_get_node(t->cwd, argv[1]);
+
+    if (!n) {
+      CMD_STDOUT(NULL, "Directory does not exist.", 0);
+      return;
+    }
+
+    if (n->kind != VFS_DIR) {
+      CMD_STDOUT(NULL, "Path is not a directory.", 0);
+      return;
     }
 
     n = n->children;
@@ -114,15 +114,7 @@ static void cmd_cd(struct terminal_t *t, int argc, char **argv) {
     return;
   }
 
-  // TODO: make this accept multiple '../'s to go back multiple levels
-  if (strcmp("..", argv[1]) == 0 || strcmp("../", argv[1]) == 0) {
-    if (!t->cwd->parent) return;
-
-    t->cwd = t->cwd->parent;
-    return;
-  }
-
-  struct vfs_node_t *n = vfs_is_child(t->cwd, argv[1], true);
+  struct vfs_node_t *n = vfs_get_node(t->cwd, argv[1]);
 
   if (!n || n->kind != VFS_DIR) {
     CMD_STDOUT(NULL, "Directory does not exist.", 0);
@@ -139,7 +131,7 @@ static void cmd_cat(struct terminal_t *t, int argc, char **argv) {
     return;
   }
 
-  struct vfs_node_t *n = vfs_is_child(t->cwd, argv[1], false);
+  struct vfs_node_t *n = vfs_get_node(t->cwd, argv[1]);
 
   if (!n || n->kind != VFS_FILE) {
     CMD_STDOUT(NULL, "File does not exist or is a directory.", 0);

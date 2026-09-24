@@ -114,15 +114,21 @@ struct vfs_node_t *vfs_get_node(const struct vfs_node_t *fs_root, const char *pa
   strcpy(fp, path);
 
   struct vfs_node_t *res = (struct vfs_node_t *)fs_root;
-  char *token = strtok(fp, delim);
+  if (strcmp(path, ".") == 0) return res;
 
+  char *token = strtok(fp, delim);
   while (token) {
-    if (res->kind != VFS_DIR) {   // can't descend into a file
-      res = NULL;
-      break;
+    struct vfs_node_t *head = res->children;
+
+    if (strcmp(token, "..") == 0) {
+      res = res->parent;
+      LOG("test");
+
+      if (!res) return NULL;
+      token = strtok(NULL, delim);
+      continue;
     }
 
-    struct vfs_node_t *head = res->children;
     while (head && strcmp(head->name, token) != 0) {
       head = head->next;
     }
