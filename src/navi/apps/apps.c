@@ -4,13 +4,14 @@
 #include <stdlib.h>
 
 #include "terminal.h"
+#include "notes.h"
 
 #include "test_pattern.h"
 
 struct app_desc apps_registry[NUM_APPS] = {
   { "Trash", "icons/trash.bmp", 400, 320, 0, files_init, files_update, files_close, "/home/trash" },
   { "File", "icons/file_explorer.bmp", 400, 320, 0, files_init, files_update, files_close, "/home/" },
-  { "Note", "icons/notes.bmp", 240, 320, 0, notes_init, notes_update, notes_close, NULL },
+  { "Note", "icons/notes.bmp", 240, 320, sizeof(struct notes_t), notes_init, notes_update, notes_close, "/home/" },
   { "Term", "icons/terminal.bmp", 400, 320, sizeof(struct terminal_t), terminal_init, terminal_update, terminal_close, "/home/" },
   { "Test", "icons/test_pattern.bmp", 200, 160, 0, NULL, draw_test_pattern, NULL, NULL },
 };

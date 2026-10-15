@@ -11,8 +11,6 @@
 #include "navi/apps/apps.h"
 
 #define TITLE_BAR_H 20
-#define GLYPH_WIDTH 8
-#define GLYPH_HEIGHT 16
 
 #define COL_TITLE_FOCUSED    RGB(50, 50, 100)
 #define COL_TITLE_UNFOCUSED  RGB(30, 30, 52)
@@ -59,7 +57,7 @@ void draw_bitmap_to_framebuffer(uint32_t *framebuffer, int fb_w, int fb_h, uint3
 }
 
 
-static void draw_glyph(uint32_t *fb, int fb_w, int fb_h, unsigned char c, int x0, int y0, uint32_t color) {
+void draw_glyph(uint32_t *fb, int fb_w, int fb_h, unsigned char c, int x0, int y0, uint32_t color) {
   for (int y = 0; y < GLYPH_HEIGHT; y++) {
     int fy = y0 + y;
     if (fy < 0 || fy >= fb_h) continue;
@@ -102,6 +100,28 @@ void draw_string_fb(uint32_t *fb, int fb_w, int fb_h, const char *str, int x, in
 void draw_string_to_framebuffer(uint32_t *framebuffer, const char *str, int x_offset, int y_offset, int *next_char_x, int *next_char_y, uint32_t color) {
   draw_string_fb(framebuffer, SCREEN_W, SCREEN_H, str, x_offset, y_offset, next_char_x, next_char_y, color);
 }
+
+
+// draw_string fb but with wrapping logic
+void text_wrap_region_draw_string(uint32_t *fb, int fb_w, int fb_h, int wrap_width, const char *str, int x, int y, int *next_x, int *next_y, uint32_t color) {
+  int x_start = x;
+
+  for (; *str; ++str) {
+    if (*str == '\n') {
+      y += GLYPH_HEIGHT;
+      x = x_start;
+    } else if (*str == '\t') {
+      x += GLYPH_WIDTH * 2;
+    } else {
+      draw_glyph(fb, fb_w, fb_h, (unsigned char)*str, x, y, color);
+      x += GLYPH_WIDTH;
+    }
+  }
+
+  if (next_x) *next_x = x;
+  if (next_y) *next_y = y;
+}
+
 
 
 // ------------------------------------------------------------- helpers
