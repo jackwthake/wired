@@ -3,6 +3,8 @@
 
 #include <vfs.h>
 
+#define TERMINAL_MAX_COLS 60
+
 struct history_entry_t {
   char *prompt;
   char *line;

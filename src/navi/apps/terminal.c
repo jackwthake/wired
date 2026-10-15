@@ -346,20 +346,20 @@ void terminal_update(struct window *win) {
   // draw history
   for (unsigned i = t->display_start; i < t->num_lines; ++i) {
     if (t->lines[i]->is_command) {
-      draw_string_fb(win->framebuff, win->w, win->h, t->lines[i]->prompt, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-      draw_string_fb(win->framebuff, win->w, win->h, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-      draw_string_fb(win->framebuff, win->w, win->h, t->lines[i]->line, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+      text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, t->lines[i]->prompt, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+      text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+      text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, t->lines[i]->line, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
     } else {
-      draw_string_fb(win->framebuff, win->w, win->h, t->lines[i]->line, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+      text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, t->lines[i]->line, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
     }
 
     next_start_y += LINE_HEIGHT;
   }
 
   // draw prompt
-  draw_string_fb(win->framebuff, win->w, win->h, t->cwd_str, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-  draw_string_fb(win->framebuff, win->w, win->h, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-  draw_string_fb(win->framebuff, win->w, win->h, t->input, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+  text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, t->cwd_str, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+  text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+  text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, t->input, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
 
   // draw cursor
   // blink: on for one half-second, off for the next

@@ -98,6 +98,11 @@ void platform_update(struct platform *platform) {
           case SDLK_END:       k = NK_END;       break;
           case SDLK_DELETE:    k = NK_DELETE;    break;
           case SDLK_ESCAPE:    k = NK_ESCAPE;    break;
+          case SDLK_S:
+            if (e.key.mod & SDL_KMOD_CTRL) {
+              k = CTRL_S;
+            }
+            break;
           default: break;
         }
         if (k != NK_NONE && in->key_count < INPUT_KEYS_MAX) {

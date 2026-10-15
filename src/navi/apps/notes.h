@@ -3,9 +3,12 @@
 
 #include <vfs.h>
 
+#define NOTES_MAX_COLS 60
+
 struct notes_t {
   struct vfs_node_t *file;
   
+  unsigned cursor_pos;
   char *content;
   unsigned content_size;
 };

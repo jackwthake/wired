@@ -105,14 +105,24 @@ void draw_string_to_framebuffer(uint32_t *framebuffer, const char *str, int x_of
 // draw_string fb but with wrapping logic
 void text_wrap_region_draw_string(uint32_t *fb, int fb_w, int fb_h, int wrap_width, const char *str, int x, int y, int *next_x, int *next_y, uint32_t color) {
   int x_start = x;
+  if (wrap_width <= 0 || wrap_width > fb_w - x_start) {
+    wrap_width = fb_w - x_start;
+  } else {
+    wrap_width *= GLYPH_WIDTH;  // convert from character count to pixel width
+  }
 
-  for (; *str; ++str) {
+  for (unsigned i = 0; *str; ++str, ++i) {
     if (*str == '\n') {
       y += GLYPH_HEIGHT;
       x = x_start;
     } else if (*str == '\t') {
       x += GLYPH_WIDTH * 2;
     } else {
+      if (x + GLYPH_WIDTH > x_start + wrap_width || x + GLYPH_WIDTH > fb_w) {
+        y += GLYPH_HEIGHT;
+        x = x_start;
+      }
+
       draw_glyph(fb, fb_w, fb_h, (unsigned char)*str, x, y, color);
       x += GLYPH_WIDTH;
     }
