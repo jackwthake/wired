@@ -13,7 +13,7 @@
 extern state_machine_t main_state;
 extern struct platform platform;
 
-static struct navi_t navi;
+struct navi_t navi;
 static uint32_t *bg;
 
 

@@ -6,7 +6,17 @@
 
 struct window;
 
+enum app_desc_id {
+  APP_TRASH = 0,
+  APP_FILE,
+  APP_NOTE,
+  APP_TERM,
+  APP_TEST,
+  NUM_APPS
+};
+
 struct app_desc {
+  enum app_desc_id id;
   const char *name;            // title bar + icon label
   const char *icon;            // "icons/testpattern.bmp"
   unsigned w, h;               // default content size

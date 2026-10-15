@@ -15,8 +15,8 @@
 
 #define LINE_HEIGHT 16
 
+extern struct navi_t navi;
 static const char *prompt_sep = " $ ";
-
 
 static struct history_entry_t *create_history_entry(char *prompt, char *line, unsigned is_cmd) {
   struct history_entry_t *e = calloc(1, sizeof(struct history_entry_t));
@@ -146,11 +146,37 @@ static void cmd_cat(struct terminal_t *t, int argc, char **argv) {
 }
 
 
-#define NUM_COMMANDS 3
+static void cmd_note(struct terminal_t *t, int argc, char **argv) {
+  struct vfs_node_t *n;
+
+  if (argc == 1) {
+    n = NULL;
+  } else if (argc != 2) {
+    CMD_STDOUT(NULL, "USAGE: note <file>", 0);
+    return;
+  } else {
+    n = vfs_get_node(t->cwd, argv[1]);
+
+    if (!n || n->kind != VFS_FILE) {
+      CMD_STDOUT(NULL, "File does not exist or is a directory.", 0);
+      return;
+    }
+  }
+
+  if (n && n->generate) {
+    n->generate(n);
+  }
+
+  navi_launch(&navi, &apps_registry[APP_NOTE], n);
+}
+
+
+#define NUM_COMMANDS 4
 static struct command commands[NUM_COMMANDS] = {
   { "ls",  cmd_ls },
   { "cd",  cmd_cd },
   { "cat", cmd_cat },
+  { "note", cmd_note },
 };
 
 
