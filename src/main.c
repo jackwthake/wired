@@ -13,6 +13,8 @@ struct platform platform;
 
 
 int main(int argc, char* argv[]) {
+  LOG("main: built %s %s from %s", __DATE__, __TIME__, __FILE__);
+
   if (!platform_init(&platform)) {
     return 1;
   }

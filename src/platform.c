@@ -1,9 +1,15 @@
 #include "platform.h"
 
-#include <sys/types.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+#ifdef _WIN32
+#include <io.h>
+#include <windows.h>
+#else
+#include <sys/types.h>
+#include <unistd.h>
+#endif
 
 #include "gfx.h"
 
@@ -31,6 +37,10 @@ unsigned platform_init(struct platform *platform) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
   
+#ifdef _WIN32
+  SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
+#endif
+
   platform->window = SDL_CreateWindow(WINDOW_TITLE, PLATFORM_SCREEN_WIDTH, PLATFORM_SCREEN_HEIGHT, SDL_WINDOW_OPENGL);
   if (!platform->window) {
     LOG("platform_init: Window creation failed: %s", SDL_GetError());
@@ -197,21 +207,41 @@ unsigned get_asset_path(char *buffer, size_t buffer_size, const char *asset_name
   char exe[512];
   char try_path[512];
 
+#ifdef _WIN32
+  DWORD path_length = GetModuleFileNameA(NULL, exe, sizeof(exe));
+  if (path_length == 0 || path_length >= sizeof(exe)) {
+    return 0;
+  }
+  size_t len = path_length;
+#else
   ssize_t len = readlink("/proc/self/exe", exe, sizeof(exe) - 1);
-  if (len > 0) {
-    exe[len] = '\0';
-    char *last = strrchr(exe, '/');
+  if (len <= 0 || (size_t)len >= sizeof(exe)) {
+    return 0;
+  }
+#endif
 
-    if (last) {
-      *last = '\0'; // trim to directory
-      snprintf(try_path, sizeof(try_path), "%s/assets/%s", exe, asset_name);
+  exe[len] = '\0';
+  char *last = strrchr(exe, '/');
+#ifdef _WIN32
+  char *last_backslash = strrchr(exe, '\\');
+  if (!last || (last_backslash && last_backslash > last)) {
+    last = last_backslash;
+  }
+#endif
 
-      if (access(try_path, R_OK) == 0) {
-        strncpy(buffer, try_path, buffer_size);
-        buffer[buffer_size-1] = '\0';
+  if (last) {
+    *last = '\0'; // trim to directory
+    snprintf(try_path, sizeof(try_path), "%s/assets/%s", exe, asset_name);
 
-        return 1;
-      }
+ #ifdef _WIN32
+    if (_access(try_path, 4) == 0) {
+ #else
+    if (access(try_path, R_OK) == 0) {
+ #endif
+      strncpy(buffer, try_path, buffer_size);
+      buffer[buffer_size-1] = '\0';
+
+      return 1;
     }
   }
 

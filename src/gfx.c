@@ -109,6 +109,9 @@ static unsigned load_and_compile_shaders(void) {
 
 
 int gfx_init(void) {
+  LOG("gfx_init: GL_VERSION=%s", (const char*)glGetString(GL_VERSION));
+  LOG("gfx_init: GL_RENDERER=%s", (const char*)glGetString(GL_RENDERER));
+
   // fullscreen quad
   static const float verts[] = { -1,-1,  1,-1,  -1,1,  1,1 };
   glGenBuffers(1, &quad);
