@@ -12,7 +12,7 @@ struct app_desc apps_registry[NUM_APPS] = {
   { APP_TRASH, "Trash", "icons/trash.bmp", 400, 320, 0, files_init, files_update, files_close, "/home/trash" },
   { APP_FILE, "File", "icons/file_explorer.bmp", 400, 320, 0, files_init, files_update, files_close, "/home/" },
   { APP_NOTE, "Note", "icons/notes.bmp", NOTES_MAX_COLS * GLYPH_WIDTH + 2, 320, sizeof(struct notes_t), notes_init, notes_update, notes_close, "/home/" },
-  { APP_TERM, "Term", "icons/terminal.bmp", TERMINAL_MAX_COLS * GLYPH_WIDTH + 2, 320, sizeof(struct terminal_t), terminal_init, terminal_update, terminal_close, "/home/" },
+  { APP_TERM, "Term", "icons/terminal.bmp", TERMINAL_MAX_COLS * GLYPH_WIDTH + 2, GLYPH_HEIGHT * 20, sizeof(struct terminal_t), terminal_init, terminal_update, terminal_close, "/home/" },
   { APP_TEST, "Test", "icons/test_pattern.bmp", 200, 160, 0, NULL, draw_test_pattern, NULL, NULL },
 };
 

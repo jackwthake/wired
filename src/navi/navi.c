@@ -53,24 +53,45 @@ void navi_clear_scroll_region(struct navi_scroll_region *region) {
 }
 
 
+void navi_update_scroll_region(struct navi_scroll_region *region) {
+  if (!region) return;
+
+  // TODO: Implement me
+}
+
+
 // ------------------------------------------------------------- drawing
 
 
-void draw_scroll_region(uint32_t *fb, int fb_w, int fb_h, struct navi_scroll_region *region) {
+void draw_scroll_region(uint32_t *fb, int fb_w, int fb_h, int x_offset, int y_offset, struct navi_scroll_region *region) {
   if (!fb || !region) return;
 
   for (int y = 0; y < region->h; y++) {
-    int fy = y;
+    int fy = y + y_offset;
     if (fy < 0 || fy >= fb_h) continue;
 
     for (int x = 0; x < region->w; x++) {
-      int fx = x;
+      int fx = x + x_offset;
       if (fx < 0 || fx >= fb_w) continue;
 
       uint32_t color = region->framebuff[y * region->w + x];
       fb[fy * fb_w + fx] = color;
     }
   }
+
+  int content_height = region->content_h > region->h ? region->content_h : region->h;
+  int scrollbar_height = (int)((long long)region->h * region->h / content_height);
+  if (scrollbar_height < 10) scrollbar_height = 10;
+  if (scrollbar_height > region->h) scrollbar_height = region->h;
+
+  int max_scroll = content_height - region->h;
+  int scroll_y = region->scroll_y;
+  if (scroll_y < 0) scroll_y = 0;
+  if (scroll_y > max_scroll) scroll_y = max_scroll;
+  int scrollbar_y = max_scroll > 0
+      ? (int)((long long)scroll_y * (region->h - scrollbar_height) / max_scroll)
+      : 0;
+  draw_rect(fb, fb_w, fb_h, fb_w - 10 + x_offset, scrollbar_y + y_offset, 10, scrollbar_height, RGB(200, 200, 200));
 }
 
 

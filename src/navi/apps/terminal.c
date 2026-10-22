@@ -324,6 +324,28 @@ void terminal_init(struct window *win, struct vfs_node_t *path) {
 }
 
 
+static void draw_terminal_contents(struct terminal_t *t, struct navi_scroll_region *region, int y_offset, int *next_start_x, int *next_start_y) {
+  *next_start_x = 1;
+  *next_start_y = 1 + y_offset;
+
+  for (unsigned i = 0; i < t->num_lines; ++i) {
+    if (t->lines[i]->is_command) {
+      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->lines[i]->prompt, 1, *next_start_y, next_start_x, next_start_y, RGB(200, 200, 200));
+      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, prompt_sep, *next_start_x, *next_start_y, next_start_x, next_start_y, RGB(200, 200, 200));
+      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->lines[i]->line, *next_start_x, *next_start_y, next_start_x, next_start_y, RGB(200, 200, 200));
+    } else {
+      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->lines[i]->line, 1, *next_start_y, next_start_x, next_start_y, RGB(200, 200, 200));
+    }
+
+    *next_start_y += LINE_HEIGHT;
+  }
+
+  text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->cwd_str, 1, *next_start_y, next_start_x, next_start_y, RGB(200, 200, 200));
+  text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, prompt_sep, *next_start_x, *next_start_y, next_start_x, next_start_y, RGB(200, 200, 200));
+  text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->input, *next_start_x, *next_start_y, next_start_x, next_start_y, RGB(200, 200, 200));
+}
+
+
 void terminal_update(struct window *win) {
   struct terminal_t *t = win->udata;
   const struct input *in = win->in;
@@ -365,31 +387,19 @@ void terminal_update(struct window *win) {
   }
 
   struct navi_scroll_region *region = t->scroll_region;
+  navi_update_scroll_region(region);
 
-  // render
   app_clear(win, RGB(34, 32, 52));
   navi_clear_scroll_region(region);
 
-  unsigned next_start_x = 1;
-  unsigned next_start_y = 1;
+  int next_start_x;
+  int next_start_y;
+  draw_terminal_contents(t, region, 0, &next_start_x, &next_start_y);
+  region->content_h = next_start_y + LINE_HEIGHT;
+  region->scroll_y = region->content_h > region->h ? region->content_h - region->h : 0;
 
-  // draw history
-  for (unsigned i = region->scroll_y / GLYPH_HEIGHT; i < t->num_lines; ++i) {
-    if (t->lines[i]->is_command) {
-      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->lines[i]->prompt, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->lines[i]->line, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-    } else {
-      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->lines[i]->line, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-    }
-
-    next_start_y += LINE_HEIGHT;
-  }
-
-  // draw prompt
-  text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->cwd_str, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-  text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-  text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->input, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+  navi_clear_scroll_region(region);
+  draw_terminal_contents(t, region, -region->scroll_y, &next_start_x, &next_start_y);
 
   // draw cursor
   // blink: on for one half-second, off for the next
@@ -399,12 +409,7 @@ void terminal_update(struct window *win) {
     draw_rect(region->framebuff, region->w, region->h, next_start_x + 1, next_start_y + (LINE_HEIGHT * 0.6f), 8, 4, RGB(200, 200, 200));
   }
 
-  draw_scroll_region(win->framebuff, win->w, win->h, region);
-  
-  // this is imperfect because a line entry could have multiple entries but this is fine for now.
-  if (next_start_y + LINE_HEIGHT > region->h) {
-    region->scroll_y += GLYPH_HEIGHT;
-  }
+  draw_scroll_region(win->framebuff, win->w, win->h, 0, 0, region);
 }
 
 

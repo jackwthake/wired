@@ -57,6 +57,7 @@ struct navi_t {
 struct navi_scroll_region {
   int w, h;
   int scroll_x, scroll_y;
+  int content_h;
   uint32_t *framebuff;
 };
 
@@ -81,8 +82,9 @@ void navi_draw_cursor(struct navi_t *navi, const struct input *in);
 struct navi_scroll_region *navi_init_scroll_region(int w, int h);
 void navi_free_scroll_region(struct navi_scroll_region *region);
 void navi_clear_scroll_region(struct navi_scroll_region *region);
+void navi_update_scroll_region(struct navi_scroll_region *region);
 
-void draw_scroll_region(uint32_t *fb, int fb_w, int fb_h, struct navi_scroll_region *region);
+void draw_scroll_region(uint32_t *fb, int fb_w, int fb_h, int x_offset, int y_offset, struct navi_scroll_region *region);
 
 
 // Drawing helpers. The *_fb variants draw into any buffer (e.g. a window's own
