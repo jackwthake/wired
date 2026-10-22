@@ -2,6 +2,7 @@
 #define __TERMINAL_H__
 
 #include <vfs.h>
+#include <navi/navi.h>
 
 #define TERMINAL_MAX_COLS 60
 
@@ -24,9 +25,7 @@ struct terminal_t {
   int history_scroll;
   unsigned int max_lines;
   unsigned int num_lines;
-
-  // scrolling
-  unsigned display_start;
+  struct navi_scroll_region *scroll_region;
 };
 
 #endif

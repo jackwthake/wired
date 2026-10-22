@@ -20,7 +20,59 @@
 extern struct platform platform;
 
 
+struct navi_scroll_region *navi_init_scroll_region(int w, int h) {
+  struct navi_scroll_region *region = calloc(1, sizeof(struct navi_scroll_region));
+  if (!region) return NULL;
+
+  region->w = w;
+  region->h = h;
+  region->scroll_x = 0;
+  region->scroll_y = 0;
+  region->framebuff = (uint32_t *)calloc(w * h, sizeof(uint32_t));
+  if (!region->framebuff) {
+    free(region);
+    return NULL;
+  }
+
+  return region;
+}
+
+
+void navi_free_scroll_region(struct navi_scroll_region *region) {
+  if (region) {
+    free(region->framebuff);
+    free(region);
+  }
+}
+
+
+void navi_clear_scroll_region(struct navi_scroll_region *region) {
+  if (region && region->framebuff) {
+    memset(region->framebuff, 0, region->w * region->h * sizeof(uint32_t));
+  }
+}
+
+
 // ------------------------------------------------------------- drawing
+
+
+void draw_scroll_region(uint32_t *fb, int fb_w, int fb_h, struct navi_scroll_region *region) {
+  if (!fb || !region) return;
+
+  for (int y = 0; y < region->h; y++) {
+    int fy = y;
+    if (fy < 0 || fy >= fb_h) continue;
+
+    for (int x = 0; x < region->w; x++) {
+      int fx = x;
+      if (fx < 0 || fx >= fb_w) continue;
+
+      uint32_t color = region->framebuff[y * region->w + x];
+      fb[fy * fb_w + fx] = color;
+    }
+  }
+}
+
 
 void draw_rect(uint32_t *pixels, unsigned fb_w, unsigned fb_h, unsigned x, unsigned y, unsigned w, unsigned h, uint32_t color) {
   if (!pixels || w == 0 || h == 0) {

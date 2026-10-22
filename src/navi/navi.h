@@ -54,6 +54,13 @@ struct navi_t {
 };
 
 
+struct navi_scroll_region {
+  int w, h;
+  int scroll_x, scroll_y;
+  uint32_t *framebuff;
+};
+
+
 void navi_init(struct navi_t *navi, unsigned max_open);
 void navi_free(struct navi_t *navi);
 
@@ -71,10 +78,16 @@ void navi_update_windows(struct navi_t *navi, struct input *in);
 void navi_draw_cursor(struct navi_t *navi, const struct input *in);
 
 
+struct navi_scroll_region *navi_init_scroll_region(int w, int h);
+void navi_free_scroll_region(struct navi_scroll_region *region);
+void navi_clear_scroll_region(struct navi_scroll_region *region);
+
+void draw_scroll_region(uint32_t *fb, int fb_w, int fb_h, struct navi_scroll_region *region);
+
+
 // Drawing helpers. The *_fb variants draw into any buffer (e.g. a window's own
 // framebuff); the older names draw into the full-screen buffer.
 void draw_rect(uint32_t *pixels, unsigned fb_w, unsigned fb_h, unsigned x, unsigned y, unsigned w, unsigned h, uint32_t color);
-
 
 #define GLYPH_WIDTH 8
 #define GLYPH_HEIGHT 16

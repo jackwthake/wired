@@ -313,6 +313,7 @@ void terminal_init(struct window *win, struct vfs_node_t *path) {
   t->lines = calloc(HISTORY_LENGTH, sizeof(struct terminal_t *));
   t->cwd_str = calloc(PROMPT_LENGTH, sizeof(char));
   t->input = calloc(INPUT_LENGTH, sizeof(char));
+  t->scroll_region = navi_init_scroll_region(win->w, win->h);
 
   t->num_lines = 0;
   t->max_lines = HISTORY_LENGTH;
@@ -363,41 +364,46 @@ void terminal_update(struct window *win) {
     }
   }
 
+  struct navi_scroll_region *region = t->scroll_region;
+
   // render
   app_clear(win, RGB(34, 32, 52));
+  navi_clear_scroll_region(region);
 
   unsigned next_start_x = 1;
   unsigned next_start_y = 1;
 
   // draw history
-  for (unsigned i = t->display_start; i < t->num_lines; ++i) {
+  for (unsigned i = region->scroll_y / GLYPH_HEIGHT; i < t->num_lines; ++i) {
     if (t->lines[i]->is_command) {
-      text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, t->lines[i]->prompt, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-      text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-      text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, t->lines[i]->line, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->lines[i]->prompt, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->lines[i]->line, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
     } else {
-      text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, t->lines[i]->line, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+      text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->lines[i]->line, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
     }
 
     next_start_y += LINE_HEIGHT;
   }
 
   // draw prompt
-  text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, t->cwd_str, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-  text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
-  text_wrap_region_draw_string(win->framebuff, win->w, win->h, TERMINAL_MAX_COLS, t->input, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+  text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->cwd_str, 1, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+  text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, prompt_sep, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
+  text_wrap_region_draw_string(region->framebuff, region->w, region->h, TERMINAL_MAX_COLS, t->input, next_start_x, next_start_y, &next_start_x, &next_start_y, RGB(200, 200, 200));
 
   // draw cursor
   // blink: on for one half-second, off for the next
   double period = 0.5;
 
   if (fmod(in->time, period * 2.0) < period) {
-    draw_rect(win->framebuff, win->w, win->h, next_start_x + 1, next_start_y + (LINE_HEIGHT * 0.6f), 8, 4, RGB(200, 200, 200));
+    draw_rect(region->framebuff, region->w, region->h, next_start_x + 1, next_start_y + (LINE_HEIGHT * 0.6f), 8, 4, RGB(200, 200, 200));
   }
+
+  draw_scroll_region(win->framebuff, win->w, win->h, region);
   
   // this is imperfect because a line entry could have multiple entries but this is fine for now.
-  if (next_start_y + LINE_HEIGHT > win->h) {
-    ++t->display_start;
+  if (next_start_y + LINE_HEIGHT > region->h) {
+    region->scroll_y += GLYPH_HEIGHT;
   }
 }
 
